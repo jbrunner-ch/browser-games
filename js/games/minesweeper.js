@@ -1,7 +1,7 @@
 /**
  * Hexa & Classic Minesweeper Deluxe
- * Features fair first-click guarantee, dual grid modes (Classic Square & Hexagonal),
- * chording, flagging, timer, customizable difficulties and procedural board generations.
+ * Levels 1 - 100+ with fair first-click guarantee, dual grid modes,
+ * progressive grid scaling and mine percentage.
  */
 
 window.MinesweeperGame = class {
@@ -17,7 +17,7 @@ window.MinesweeperGame = class {
         this.totalMines = 10;
         this.isHex = false;
 
-        this.grid = []; // { isMine, isRevealed, isFlagged, count }
+        this.grid = [];
         this.firstClick = true;
         this.gameOver = false;
         this.hasWon = false;
@@ -26,9 +26,8 @@ window.MinesweeperGame = class {
         this.startTime = 0;
         this.elapsed = 0;
         this.currentLevel = 1;
-        this.difficulty = 'Beginner';
 
-        this.cellSize = 36;
+        this.cellSize = 34;
         this.boardOffset = { x: 50, y: 70 };
     }
 
@@ -44,9 +43,9 @@ window.MinesweeperGame = class {
         const hud = document.createElement('div');
         hud.className = 'rush-hud';
         hud.innerHTML = `
-            <div class="rush-stat">Mines: <span class="rush-stat-val" style="color:#ef4444;" id="ms-mines">10</span></div>
-            <div class="rush-stat">Time: <span class="rush-stat-val" style="font-family:monospace;" id="ms-time">000</span></div>
-            <button class="btn-game-action" id="btn-ms-mode">Mode: Square</button>
+            <div class="rush-stat">Minen: <span class="rush-stat-val" style="color:#ef4444;" id="ms-mines">10</span></div>
+            <div class="rush-stat">Zeit: <span class="rush-stat-val" style="font-family:monospace;" id="ms-time">000</span></div>
+            <button class="btn-game-action" id="btn-ms-mode">Modus: Quadrat</button>
             <button class="btn-game-action" id="btn-ms-reset">↺ Reset</button>
         `;
         this.container.appendChild(hud);
@@ -55,11 +54,11 @@ window.MinesweeperGame = class {
         win.className = 'game-win-overlay';
         win.id = 'ms-win-screen';
         win.innerHTML = `
-            <div class="win-title">FIELD CLEARED! 🚩</div>
-            <div class="win-subtitle" id="ms-win-sub">All mines safely disarmed!</div>
-            <div style="display:flex; gap:12px;">
-                <button class="btn-game-action" id="btn-ms-replay">Play Again</button>
-                <button class="btn-game-action" style="background:#10b981; border-color:#10b981;" id="btn-ms-next">Next Level ➔</button>
+            <div class="win-title">MINENFELD GERÄUMT!</div>
+            <div class="win-subtitle" id="ms-win-sub">Alle Minen entschärft.</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-game-action" id="btn-ms-replay">Wiederholen</button>
+                <button class="btn-game-action" style="background:#2563eb; color:#fff;" id="btn-ms-next">Nächstes Level ➔</button>
             </div>
         `;
         this.container.appendChild(win);
@@ -68,40 +67,42 @@ window.MinesweeperGame = class {
         this.resize();
 
         const lvl = options.levelIndex || 1;
-        this.startLevel(lvl, options.difficulty || 'Beginner');
+        this.startLevel(lvl);
+
+        requestAnimationFrame(() => this.resize());
 
         this.loop = this.loop.bind(this);
         this.animId = requestAnimationFrame(this.loop);
     }
 
     resize() {
+        if (!this.container || !this.canvas) return;
         const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        const w = rect.width > 50 ? rect.width : (window.innerWidth || 800);
+        const h = rect.height > 50 ? rect.height : (window.innerHeight - 48 || 600);
 
-        this.boardOffset.x = Math.max(20, Math.floor((rect.width - this.cols * this.cellSize) / 2));
-        this.boardOffset.y = Math.max(60, Math.floor((rect.height - this.rows * this.cellSize) / 2) + 15);
+        this.canvas.width = w;
+        this.canvas.height = h;
+
+        this.cellSize = Math.max(22, Math.min(38, Math.floor((h - 120) / this.rows)));
+        this.boardOffset.x = Math.max(16, Math.floor((w - this.cols * this.cellSize) / 2));
+        this.boardOffset.y = Math.max(50, Math.floor((h - this.rows * this.cellSize) / 2) + 15);
     }
 
-    startLevel(levelIndex = 1, difficulty = 'Beginner') {
+    startLevel(levelIndex = 1) {
         this.currentLevel = levelIndex;
-        this.difficulty = difficulty;
 
-        if (levelIndex === 1) {
-            this.rows = 9; this.cols = 9; this.totalMines = 10; this.isHex = false;
-        } else if (levelIndex === 2) {
-            this.rows = 12; this.cols = 12; this.totalMines = 20; this.isHex = false;
-        } else if (levelIndex === 3) {
-            this.rows = 16; this.cols = 16; this.totalMines = 40; this.isHex = false;
-        } else if (levelIndex === 4) {
-            // Hexagonal Mode!
-            this.rows = 10; this.cols = 10; this.totalMines = 16; this.isHex = true;
-        } else {
-            this.rows = 14; this.cols = 14; this.totalMines = 32; this.isHex = true;
-        }
+        // Scaling rows, cols, and mine density from level 1 to 100+
+        const baseSize = 8 + Math.min(12, Math.floor(levelIndex / 4));
+        this.rows = baseSize;
+        this.cols = Math.min(22, baseSize + Math.floor(levelIndex / 8));
+        this.isHex = (levelIndex % 3 === 0);
+
+        const density = 0.12 + Math.min(0.10, levelIndex * 0.003);
+        this.totalMines = Math.max(6, Math.floor(this.rows * this.cols * density));
 
         const modeBtn = this.container.querySelector('#btn-ms-mode');
-        if (modeBtn) modeBtn.innerText = this.isHex ? 'Mode: Hexagon' : 'Mode: Square';
+        if (modeBtn) modeBtn.innerText = this.isHex ? 'Modus: Hexagon' : 'Modus: Quadrat';
 
         this.firstClick = true;
         this.gameOver = false;
@@ -140,7 +141,6 @@ window.MinesweeperGame = class {
             const r = Math.floor(Math.random() * this.rows);
             const c = Math.floor(Math.random() * this.cols);
 
-            // Keep initial click and immediate neighbors mine-free
             if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
             if (!this.grid[r][c].isMine) {
                 this.grid[r][c].isMine = true;
@@ -148,7 +148,6 @@ window.MinesweeperGame = class {
             }
         }
 
-        // Compute neighbor counts
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
                 if (!this.grid[r][c].isMine) {
@@ -161,7 +160,6 @@ window.MinesweeperGame = class {
     getNeighbors(r, c) {
         const neighbors = [];
         if (!this.isHex) {
-            // 8 neighbors
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
@@ -173,7 +171,6 @@ window.MinesweeperGame = class {
                 }
             }
         } else {
-            // 6 hex neighbors (offset coordinates)
             const isOffset = (r % 2 === 1);
             const deltas = isOffset
                 ? [[-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]]
@@ -192,37 +189,36 @@ window.MinesweeperGame = class {
 
     bindEvents() {
         window.addEventListener('resize', () => this.resize());
-
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
         this.canvas.addEventListener('mousedown', (e) => {
             if (this.gameOver || this.hasWon) return;
 
             const rect = this.canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left - this.boardOffset.x;
-            const clickY = e.clientY - rect.top - this.boardOffset.y;
+            const cx = e.clientX - rect.left - this.boardOffset.x;
+            const cy = e.clientY - rect.top - this.boardOffset.y;
 
-            const col = Math.floor(clickX / this.cellSize);
-            const row = Math.floor(clickY / this.cellSize);
+            const col = Math.floor(cx / this.cellSize);
+            const row = Math.floor(cy / this.cellSize);
 
             if (row >= 0 && row < this.rows && col >= 0 && col < this.cols) {
-                if (e.button === 2) {
-                    // Right click = Flag
-                    this.toggleFlag(row, col);
-                } else if (e.button === 0) {
-                    // Left click = Reveal / Chord
-                    this.handleClick(row, col);
-                }
+                if (e.button === 2) this.toggleFlag(row, col);
+                else if (e.button === 0) this.handleClick(row, col);
             }
         });
 
-        this.container.querySelector('#btn-ms-reset').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
+        this.container.querySelector('#btn-ms-reset').onclick = () => this.startLevel(this.currentLevel);
         this.container.querySelector('#btn-ms-mode').onclick = () => {
             this.isHex = !this.isHex;
-            this.startLevel(this.isHex ? 4 : 1, this.difficulty);
+            const btn = this.container.querySelector('#btn-ms-mode');
+            if (btn) btn.innerText = this.isHex ? 'Modus: Hexagon' : 'Modus: Quadrat';
+            this.startLevel(this.currentLevel);
         };
-        this.container.querySelector('#btn-ms-replay').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
-        this.container.querySelector('#btn-ms-next').onclick = () => this.startLevel(this.currentLevel + 1, this.difficulty);
+        this.container.querySelector('#btn-ms-replay').onclick = () => this.startLevel(this.currentLevel);
+        this.container.querySelector('#btn-ms-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('minesweeper', this.currentLevel + 1);
+            else this.startLevel(this.currentLevel + 1);
+        };
     }
 
     handleClick(r, c) {
@@ -235,10 +231,9 @@ window.MinesweeperGame = class {
         }
 
         if (cell.isRevealed) {
-            // Chording: if flags equal neighbor count, reveal others
             const nbs = this.getNeighbors(r, c);
-            const flaggedCount = nbs.filter(nb => this.grid[nb.r][nb.c].isFlagged).length;
-            if (flaggedCount === cell.count) {
+            const flagged = nbs.filter(nb => this.grid[nb.r][nb.c].isFlagged).length;
+            if (flagged === cell.count) {
                 nbs.forEach(nb => {
                     if (!this.grid[nb.r][nb.c].isRevealed && !this.grid[nb.r][nb.c].isFlagged) {
                         this.revealCell(nb.r, nb.c);
@@ -248,7 +243,6 @@ window.MinesweeperGame = class {
         } else {
             this.revealCell(r, c);
         }
-
         this.checkWinCondition();
     }
 
@@ -257,20 +251,15 @@ window.MinesweeperGame = class {
         if (cell.isRevealed || cell.isFlagged) return;
 
         cell.isRevealed = true;
-
         if (cell.isMine) {
-            // Hit a mine!
             this.triggerGameOver();
             return;
         }
 
         if (window.AudioManager) window.AudioManager.playClick();
 
-        // Flood fill zeros
         if (cell.count === 0) {
-            this.getNeighbors(r, c).forEach(nb => {
-                this.revealCell(nb.r, nb.c);
-            });
+            this.getNeighbors(r, c).forEach(nb => this.revealCell(nb.r, nb.c));
         }
     }
 
@@ -285,16 +274,13 @@ window.MinesweeperGame = class {
     }
 
     checkWinCondition() {
-        let unrevealedNonMines = 0;
+        let unrevealed = 0;
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
-                if (!this.grid[r][c].isMine && !this.grid[r][c].isRevealed) {
-                    unrevealedNonMines++;
-                }
+                if (!this.grid[r][c].isMine && !this.grid[r][c].isRevealed) unrevealed++;
             }
         }
-
-        if (unrevealedNonMines === 0 && !this.gameOver) {
+        if (unrevealed === 0 && !this.gameOver) {
             this.triggerWin();
         }
     }
@@ -302,8 +288,6 @@ window.MinesweeperGame = class {
     triggerGameOver() {
         this.gameOver = true;
         if (window.AudioManager) window.AudioManager.playExplosion();
-
-        // Reveal all mines
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
                 if (this.grid[r][c].isMine) this.grid[r][c].isRevealed = true;
@@ -321,7 +305,6 @@ window.MinesweeperGame = class {
     updateHUD() {
         const mEl = this.container.querySelector('#ms-mines');
         const tEl = this.container.querySelector('#ms-time');
-
         if (mEl) mEl.innerText = `${Math.max(0, this.totalMines - this.flagCount)}`;
         if (tEl && !this.gameOver && !this.hasWon) {
             this.elapsed = Math.floor((performance.now() - this.startTime) / 1000);
@@ -332,10 +315,7 @@ window.MinesweeperGame = class {
     loop() {
         this.animId = requestAnimationFrame(this.loop);
         if (this.isPaused || !this.ctx) return;
-
-        if (!this.gameOver && !this.hasWon && !this.firstClick) {
-            this.updateHUD();
-        }
+        if (!this.gameOver && !this.hasWon && !this.firstClick) this.updateHUD();
         this.render();
     }
 
@@ -347,10 +327,7 @@ window.MinesweeperGame = class {
         const ox = this.boardOffset.x;
         const oy = this.boardOffset.y;
 
-        const numColors = [
-            '#3b82f6', '#10b981', '#ef4444', '#8b5cf6',
-            '#f59e0b', '#06b6d4', '#e11d48', '#ffffff'
-        ];
+        const numColors = ['#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#06b6d4', '#ec4899', '#ffffff'];
 
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
@@ -359,26 +336,26 @@ window.MinesweeperGame = class {
                 const y = oy + r * cs;
 
                 if (cell.isRevealed) {
-                    ctx.fillStyle = cell.isMine ? '#dc2626' : '#1e293b';
+                    ctx.fillStyle = cell.isMine ? '#dc2626' : '#18181b';
                     ctx.fillRect(x, y, cs - 2, cs - 2);
 
                     if (cell.isMine) {
-                        ctx.fillStyle = '#fff';
-                        ctx.font = 'bold 16px sans-serif';
-                        ctx.fillText('💣', x + cs * 0.2, y + cs * 0.7);
+                        ctx.fillStyle = '#f4f4f5';
+                        ctx.font = '12px monospace';
+                        ctx.fillText('💣', x + cs * 0.25, y + cs * 0.7);
                     } else if (cell.count > 0) {
                         ctx.fillStyle = numColors[cell.count - 1];
-                        ctx.font = 'bold 16px sans-serif';
+                        ctx.font = 'bold 13px monospace';
                         ctx.fillText(`${cell.count}`, x + cs * 0.35, y + cs * 0.7);
                     }
                 } else {
-                    ctx.fillStyle = '#334155';
+                    ctx.fillStyle = '#27272a';
                     ctx.fillRect(x, y, cs - 2, cs - 2);
 
                     if (cell.isFlagged) {
                         ctx.fillStyle = '#ef4444';
-                        ctx.font = 'bold 16px sans-serif';
-                        ctx.fillText('🚩', x + cs * 0.2, y + cs * 0.7);
+                        ctx.font = '12px monospace';
+                        ctx.fillText('⚑', x + cs * 0.3, y + cs * 0.7);
                     }
                 }
             }
@@ -392,4 +369,3 @@ window.MinesweeperGame = class {
         if (this.container) this.container.innerHTML = '';
     }
 };
-

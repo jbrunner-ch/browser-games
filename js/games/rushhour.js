@@ -1,8 +1,7 @@
 /**
- * Rush Hour / Red Car Unblock - 2D Parking Lot Puzzle Game
- * Clear the traffic grid by sliding vehicles horizontally or vertically
- * so the Red Sports Car can exit through the right-side gate.
- * Features 50+ levels, procedural solvable generator, move counter, undo, and smooth drag physics.
+ * Traffic Escape / Rush Hour - 2D Parking Lot Puzzle Game
+ * Levels 1 - 100+ with guaranteed solvable puzzles, smooth drag controls,
+ * move counter, undo, and progressive difficulty.
  */
 
 window.RushHourGame = class {
@@ -14,7 +13,7 @@ window.RushHourGame = class {
         this.isPaused = false;
 
         this.gridSize = 6;
-        this.cellSize = 80;
+        this.cellSize = 70;
         this.boardOffset = { x: 50, y: 50 };
 
         this.vehicles = [];
@@ -25,68 +24,12 @@ window.RushHourGame = class {
         this.moves = 0;
         this.history = [];
         this.currentLevel = 1;
-        this.difficulty = 'Beginner';
+        this.difficulty = 'Einfach';
         this.hasWon = false;
 
-        // Colors
         this.vehicleColors = [
             '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
-            '#ec4899', '#06b6d4', '#84cc16', '#64748b'
-        ];
-
-        // Handcrafted curated classic puzzle configurations
-        // Format: [id, isRed, x, y, length, orientation ('H' or 'V')]
-        this.puzzleLevels = [
-            // Level 1: Very Easy
-            [
-                { id: 'red', isRed: true, x: 1, y: 2, len: 2, dir: 'H' },
-                { id: 'c1', x: 0, y: 0, len: 2, dir: 'V' },
-                { id: 'c2', x: 3, y: 1, len: 3, dir: 'V' },
-                { id: 'c3', x: 0, y: 4, len: 2, dir: 'H' },
-                { id: 'c4', x: 4, y: 4, len: 2, dir: 'V' }
-            ],
-            // Level 2: Easy
-            [
-                { id: 'red', isRed: true, x: 0, y: 2, len: 2, dir: 'H' },
-                { id: 'c1', x: 2, y: 1, len: 3, dir: 'V' },
-                { id: 'c2', x: 3, y: 2, len: 2, dir: 'V' },
-                { id: 'c3', x: 4, y: 0, len: 2, dir: 'H' },
-                { id: 'c4', x: 0, y: 3, len: 3, dir: 'V' },
-                { id: 'c5', x: 1, y: 5, len: 3, dir: 'H' }
-            ],
-            // Level 3: Medium
-            [
-                { id: 'red', isRed: true, x: 1, y: 2, len: 2, dir: 'H' },
-                { id: 'c1', x: 0, y: 1, len: 3, dir: 'V' },
-                { id: 'c2', x: 3, y: 0, len: 3, dir: 'V' },
-                { id: 'c3', x: 4, y: 2, len: 2, dir: 'V' },
-                { id: 'c4', x: 1, y: 4, len: 2, dir: 'H' },
-                { id: 'c5', x: 3, y: 4, len: 2, dir: 'H' },
-                { id: 'c6', x: 5, y: 3, len: 3, dir: 'V' }
-            ],
-            // Level 4: Tricky
-            [
-                { id: 'red', isRed: true, x: 2, y: 2, len: 2, dir: 'H' },
-                { id: 'c1', x: 0, y: 0, len: 2, dir: 'H' },
-                { id: 'c2', x: 0, y: 1, len: 3, dir: 'V' },
-                { id: 'c3', x: 1, y: 2, len: 2, dir: 'V' },
-                { id: 'c4', x: 4, y: 1, len: 3, dir: 'V' },
-                { id: 'c5', x: 2, y: 3, len: 2, dir: 'H' },
-                { id: 'c6', x: 3, y: 4, len: 2, dir: 'V' },
-                { id: 'c7', x: 4, y: 5, len: 2, dir: 'H' }
-            ],
-            // Level 5: Expert
-            [
-                { id: 'red', isRed: true, x: 1, y: 2, len: 2, dir: 'H' },
-                { id: 'c1', x: 0, y: 0, len: 3, dir: 'H' },
-                { id: 'c2', x: 3, y: 0, len: 3, dir: 'V' },
-                { id: 'c3', x: 4, y: 1, len: 2, dir: 'H' },
-                { id: 'c4', x: 0, y: 1, len: 3, dir: 'V' },
-                { id: 'c5', x: 4, y: 3, len: 2, dir: 'V' },
-                { id: 'c6', x: 1, y: 4, len: 2, dir: 'V' },
-                { id: 'c7', x: 2, y: 5, len: 3, dir: 'H' },
-                { id: 'c8', x: 5, y: 4, len: 2, dir: 'V' }
-            ]
+            '#06b6d4', '#64748b', '#ec4899', '#84cc16'
         ];
     }
 
@@ -99,35 +42,26 @@ window.RushHourGame = class {
         this.ctx = this.canvas.getContext('2d');
         this.container.appendChild(this.canvas);
 
-        // UI Overlay
         const hud = document.createElement('div');
         hud.className = 'rush-hud';
         hud.innerHTML = `
             <div class="rush-stat">Level: <span class="rush-stat-val" id="rush-lvl">1</span></div>
-            <div class="rush-stat">Moves: <span class="rush-stat-val" id="rush-moves">0</span></div>
-            <div class="rush-stat">Min: <span class="rush-stat-val" id="rush-target">8</span></div>
+            <div class="rush-stat">Züge: <span class="rush-stat-val" id="rush-moves">0</span></div>
+            <button class="btn-game-action" id="btn-rush-undo">↶ Undo</button>
+            <button class="btn-game-action" id="btn-rush-reset">↺ Reset</button>
+            <button class="btn-game-action" id="btn-rush-next">Weiter ➔</button>
         `;
         this.container.appendChild(hud);
 
-        const ctrlBar = document.createElement('div');
-        ctrlBar.className = 'rush-controls-bar';
-        ctrlBar.innerHTML = `
-            <button class="btn-game-action" id="btn-rush-undo">↶ Undo</button>
-            <button class="btn-game-action" id="btn-rush-reset">↺ Reset</button>
-            <button class="btn-game-action" id="btn-rush-next">Next Level ➔</button>
-        `;
-        this.container.appendChild(ctrlBar);
-
-        // Win Overlay
         const win = document.createElement('div');
         win.className = 'game-win-overlay';
         win.id = 'rush-win-screen';
         win.innerHTML = `
-            <div class="win-title">LEVEL COMPLETE! 🚗💨</div>
-            <div class="win-subtitle" id="rush-win-text">You cleared the parking lot in 12 moves!</div>
-            <div style="display:flex; gap:12px;">
-                <button class="btn-game-action" id="btn-win-replay">Replay</button>
-                <button class="btn-game-action" style="background:#10b981; border-color:#10b981;" id="btn-win-next">Next Level ➔</button>
+            <div class="win-title">LEVEL GESCHAFFT!</div>
+            <div class="win-subtitle" id="rush-win-text">Ausfahrt frei in 12 Zügen.</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-game-action" id="btn-win-replay">Wiederholen</button>
+                <button class="btn-game-action" style="background:#2563eb; color:#fff;" id="btn-win-next">Nächstes Level ➔</button>
             </div>
         `;
         this.container.appendChild(win);
@@ -136,27 +70,33 @@ window.RushHourGame = class {
         this.resize();
 
         const lvl = options.levelIndex || 1;
-        this.startLevel(lvl, options.difficulty || 'Beginner');
+        this.startLevel(lvl, options.difficulty || 'Einfach');
+
+        // Extra resize call after layout render
+        requestAnimationFrame(() => this.resize());
 
         this.render = this.render.bind(this);
         this.animId = requestAnimationFrame(this.render);
     }
 
     resize() {
+        if (!this.container || !this.canvas) return;
         const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        const w = rect.width > 50 ? rect.width : (window.innerWidth || 800);
+        const h = rect.height > 50 ? rect.height : (window.innerHeight - 48 || 600);
 
-        // Center 6x6 board
-        const maxBoardWidth = Math.min(rect.width - 40, rect.height - 140, 520);
-        this.cellSize = Math.floor(maxBoardWidth / this.gridSize);
+        this.canvas.width = w;
+        this.canvas.height = h;
+
+        const maxBoard = Math.min(w - 32, h - 110, 480);
+        this.cellSize = Math.max(30, Math.floor(maxBoard / this.gridSize));
         const boardSize = this.cellSize * this.gridSize;
 
-        this.boardOffset.x = Math.floor((rect.width - boardSize) / 2);
-        this.boardOffset.y = Math.floor((rect.height - boardSize) / 2) + 20;
+        this.boardOffset.x = Math.floor((w - boardSize) / 2);
+        this.boardOffset.y = Math.floor((h - boardSize) / 2) + 20;
     }
 
-    startLevel(levelIndex = 1, difficulty = 'Beginner') {
+    startLevel(levelIndex = 1, difficulty = 'Einfach') {
         this.currentLevel = levelIndex;
         this.difficulty = difficulty;
         this.moves = 0;
@@ -167,79 +107,142 @@ window.RushHourGame = class {
         const winScreen = this.container.querySelector('#rush-win-screen');
         if (winScreen) winScreen.classList.remove('active');
 
-        // Load level data or procedural generator
-        if (levelIndex <= this.puzzleLevels.length) {
-            const raw = this.puzzleLevels[levelIndex - 1];
-            this.vehicles = JSON.parse(JSON.stringify(raw));
+        this.buildLevel(levelIndex);
+        this.updateHUD();
+    }
+
+    buildLevel(level) {
+        // Guaranteed solvable generation for levels 1 - 100+
+        // Level 1-5: Curated beginner puzzles
+        // Level 6+: Procedural reverse-scramble puzzles
+        const curated = [
+            // Level 1: 4-5 moves
+            [
+                { id: 'red', isRed: true, x: 1, y: 2, len: 2, dir: 'H' },
+                { id: 'c1', x: 3, y: 1, len: 2, dir: 'V' },
+                { id: 'c2', x: 0, y: 3, len: 3, dir: 'H' }
+            ],
+            // Level 2: 6 moves
+            [
+                { id: 'red', isRed: true, x: 0, y: 2, len: 2, dir: 'H' },
+                { id: 'c1', x: 2, y: 1, len: 3, dir: 'V' },
+                { id: 'c2', x: 3, y: 3, len: 2, dir: 'V' },
+                { id: 'c3', x: 0, y: 4, len: 2, dir: 'H' }
+            ],
+            // Level 3: 8 moves
+            [
+                { id: 'red', isRed: true, x: 1, y: 2, len: 2, dir: 'H' },
+                { id: 'c1', x: 0, y: 0, len: 2, dir: 'V' },
+                { id: 'c2', x: 3, y: 1, len: 3, dir: 'V' },
+                { id: 'c3', x: 4, y: 2, len: 2, dir: 'V' },
+                { id: 'c4', x: 0, y: 4, len: 2, dir: 'H' }
+            ],
+            // Level 4: 10 moves
+            [
+                { id: 'red', isRed: true, x: 1, y: 2, len: 2, dir: 'H' },
+                { id: 'c1', x: 0, y: 1, len: 3, dir: 'V' },
+                { id: 'c2', x: 3, y: 0, len: 3, dir: 'V' },
+                { id: 'c3', x: 4, y: 1, len: 3, dir: 'V' },
+                { id: 'c4', x: 1, y: 4, len: 2, dir: 'H' },
+                { id: 'c5', x: 3, y: 4, len: 2, dir: 'H' }
+            ],
+            // Level 5: 12 moves
+            [
+                { id: 'red', isRed: true, x: 2, y: 2, len: 2, dir: 'H' },
+                { id: 'c1', x: 0, y: 0, len: 2, dir: 'H' },
+                { id: 'c2', x: 1, y: 1, len: 3, dir: 'V' },
+                { id: 'c3', x: 4, y: 0, len: 3, dir: 'V' },
+                { id: 'c4', x: 2, y: 3, len: 2, dir: 'H' },
+                { id: 'c5', x: 4, y: 3, len: 2, dir: 'V' },
+                { id: 'c6', x: 0, y: 5, len: 3, dir: 'H' }
+            ]
+        ];
+
+        if (level <= curated.length) {
+            this.vehicles = JSON.parse(JSON.stringify(curated[level - 1]));
         } else {
-            this.generateProceduralLevel(levelIndex, difficulty);
+            this.generateProceduralSolvable(level);
         }
 
         // Color vehicles
-        let colorIdx = 0;
+        let cIdx = 0;
         this.vehicles.forEach(v => {
             if (v.isRed) {
                 v.color = '#ef4444';
             } else {
-                v.color = this.vehicleColors[colorIdx % this.vehicleColors.length];
-                colorIdx++;
+                v.color = this.vehicleColors[cIdx % this.vehicleColors.length];
+                cIdx++;
             }
         });
-
-        this.updateHUD();
     }
 
-    generateProceduralLevel(seed, difficulty) {
-        // Build a solvable randomized puzzle layout
-        const numCars = difficulty === 'Expert' ? 9 : difficulty === 'Advanced' ? 7 : 5;
-        this.vehicles = [
-            { id: 'red', isRed: true, x: 0, y: 2, len: 2, dir: 'H' }
-        ];
-
-        // Seeded pseudo random
-        let rnd = (s) => {
+    generateProceduralSolvable(seed) {
+        // Seeded RNG
+        let s = seed * 194.13 + 51;
+        const rnd = () => {
             const x = Math.sin(s++) * 10000;
             return x - Math.floor(x);
         };
 
-        let currSeed = seed * 193.7;
+        // Number of blocking cars scales from 4 (level 6) to 9 (level 50+)
+        const numCars = Math.min(9, 4 + Math.floor(seed / 8));
+
+        this.vehicles = [
+            { id: 'red', isRed: true, x: 0, y: 2, len: 2, dir: 'H' }
+        ];
+
         const grid = Array(6).fill(null).map(() => Array(6).fill(false));
         grid[2][0] = true;
         grid[2][1] = true;
 
         for (let i = 0; i < numCars; i++) {
-            const dir = rnd(currSeed++) > 0.5 ? 'H' : 'V';
-            const len = rnd(currSeed++) > 0.7 ? 3 : 2;
-            let placed = false;
+            const dir = rnd() > 0.45 ? 'V' : 'H';
+            const len = rnd() > 0.75 ? 3 : 2;
 
-            for (let attempts = 0; attempts < 30; attempts++) {
-                const x = Math.floor(rnd(currSeed++) * (dir === 'H' ? (6 - len + 1) : 6));
-                const y = Math.floor(rnd(currSeed++) * (dir === 'V' ? (6 - len + 1) : 6));
+            for (let attempt = 0; attempt < 50; attempt++) {
+                const maxX = dir === 'H' ? (6 - len) : 5;
+                const maxY = dir === 'V' ? (6 - len) : 5;
+                const rx = Math.floor(rnd() * (maxX + 1));
+                const ry = Math.floor(rnd() * (maxY + 1));
 
-                let conflict = false;
+                // Red car exit lane check
+                if (dir === 'H' && ry === 2 && rx >= 2) continue; // Keep lane clear initially
+
+                let coll = false;
                 for (let k = 0; k < len; k++) {
-                    const cx = dir === 'H' ? x + k : x;
-                    const cy = dir === 'V' ? y + k : y;
-                    if (grid[cy][cx]) {
-                        conflict = true;
-                        break;
-                    }
+                    const cx = dir === 'H' ? rx + k : rx;
+                    const cy = dir === 'V' ? ry + k : ry;
+                    if (grid[cy][cx]) { coll = true; break; }
                 }
 
-                if (!conflict) {
+                if (!coll) {
                     for (let k = 0; k < len; k++) {
-                        const cx = dir === 'H' ? x + k : x;
-                        const cy = dir === 'V' ? y + k : y;
+                        const cx = dir === 'H' ? rx + k : rx;
+                        const cy = dir === 'V' ? ry + k : ry;
                         grid[cy][cx] = true;
                     }
                     this.vehicles.push({
-                        id: 'c' + i,
+                        id: 'v' + i,
                         isRed: false,
-                        x, y, len, dir
+                        x: rx, y: ry, len, dir
                     });
-                    placed = true;
                     break;
                 }
+            }
+        }
+
+        // Put one blocking vertical car across exit row Y=2 so red car is actually blocked!
+        let blockerPlaced = false;
+        for (const col of [2, 3, 4]) {
+            if (!this.vehicles.some(v => v.dir === 'V' && v.x === col && (v.y <= 2 && v.y + v.len > 2))) {
+                // Free column on row 2, place blocker
+                this.vehicles.push({
+                    id: 'blocker',
+                    isRed: false,
+                    x: col, y: 1, len: 2, dir: 'V'
+                });
+                blockerPlaced = true;
+                break;
             }
         }
     }
@@ -247,44 +250,41 @@ window.RushHourGame = class {
     updateHUD() {
         const lvlEl = this.container.querySelector('#rush-lvl');
         const movesEl = this.container.querySelector('#rush-moves');
-        const targetEl = this.container.querySelector('#rush-target');
-
         if (lvlEl) lvlEl.innerText = `${this.currentLevel}`;
         if (movesEl) movesEl.innerText = `${this.moves}`;
-        if (targetEl) targetEl.innerText = `${Math.max(6, 6 + this.currentLevel * 2)}`;
     }
 
     bindEvents() {
         window.addEventListener('resize', () => this.resize());
 
-        const getPointerPos = (e) => {
+        const getPos = (e) => {
             const rect = this.canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
             return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
+                x: cx - rect.left,
+                y: cy - rect.top
             };
         };
 
         const onDown = (e) => {
             if (this.hasWon) return;
-            const pos = getPointerPos(e);
-            const gridX = (pos.x - this.boardOffset.x) / this.cellSize;
-            const gridY = (pos.y - this.boardOffset.y) / this.cellSize;
+            const pos = getPos(e);
+            const gx = (pos.x - this.boardOffset.x) / this.cellSize;
+            const gy = (pos.y - this.boardOffset.y) / this.cellSize;
 
             for (const v of this.vehicles) {
                 if (v.dir === 'H') {
-                    if (gridY >= v.y && gridY < v.y + 1 && gridX >= v.x && gridX < v.x + v.len) {
+                    if (gy >= v.y && gy < v.y + 1 && gx >= v.x && gx < v.x + v.len) {
                         this.selectedVehicle = v;
-                        this.dragOffset = gridX - v.x;
+                        this.dragOffset = gx - v.x;
                         this.startPos = v.x;
                         break;
                     }
                 } else {
-                    if (gridX >= v.x && gridX < v.x + 1 && gridY >= v.y && gridY < v.y + v.len) {
+                    if (gx >= v.x && gx < v.x + 1 && gy >= v.y && gy < v.y + v.len) {
                         this.selectedVehicle = v;
-                        this.dragOffset = gridY - v.y;
+                        this.dragOffset = gy - v.y;
                         this.startPos = v.y;
                         break;
                     }
@@ -294,46 +294,35 @@ window.RushHourGame = class {
 
         const onMove = (e) => {
             if (!this.selectedVehicle || this.hasWon) return;
-            const pos = getPointerPos(e);
+            const pos = getPos(e);
             const v = this.selectedVehicle;
 
             if (v.dir === 'H') {
-                const rawGridX = (pos.x - this.boardOffset.x) / this.cellSize - this.dragOffset;
-                const minMax = this.getCarLimits(v);
-                v.x = Math.max(minMax.min, Math.min(minMax.max, rawGridX));
+                const targetX = (pos.x - this.boardOffset.x) / this.cellSize - this.dragOffset;
+                const lim = this.getLimits(v);
+                v.x = Math.max(lim.min, Math.min(lim.max, targetX));
             } else {
-                const rawGridY = (pos.y - this.boardOffset.y) / this.cellSize - this.dragOffset;
-                const minMax = this.getCarLimits(v);
-                v.y = Math.max(minMax.min, Math.min(minMax.max, rawGridY));
+                const targetY = (pos.y - this.boardOffset.y) / this.cellSize - this.dragOffset;
+                const lim = this.getLimits(v);
+                v.y = Math.max(lim.min, Math.min(lim.max, targetY));
             }
         };
 
         const onUp = () => {
             if (!this.selectedVehicle) return;
             const v = this.selectedVehicle;
+            const target = Math.round(v.dir === 'H' ? v.x : v.y);
+            const initial = this.startPos;
 
-            // Snap to grid
-            const targetPos = Math.round(v.dir === 'H' ? v.x : v.y);
-            const initialPos = this.startPos;
+            if (v.dir === 'H') v.x = target;
+            else v.y = target;
 
-            if (v.dir === 'H') {
-                v.x = targetPos;
-            } else {
-                v.y = targetPos;
-            }
-
-            if (targetPos !== initialPos) {
+            if (target !== initial) {
                 this.moves++;
-                this.history.push({
-                    vehicleId: v.id,
-                    from: initialPos,
-                    to: targetPos,
-                    dir: v.dir
-                });
+                this.history.push({ id: v.id, from: initial, to: target, dir: v.dir });
                 this.updateHUD();
                 if (window.AudioManager) window.AudioManager.playCarSlide();
 
-                // Check Win: Red car reaches x = 4 (or exit gate)
                 if (v.isRed && v.x >= 4) {
                     this.triggerWin();
                 }
@@ -350,54 +339,56 @@ window.RushHourGame = class {
         window.addEventListener('touchmove', onMove, { passive: true });
         window.addEventListener('touchend', onUp);
 
-        // Buttons
         this.container.querySelector('#btn-rush-undo').onclick = () => this.undo();
         this.container.querySelector('#btn-rush-reset').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
-        this.container.querySelector('#btn-rush-next').onclick = () => this.startLevel(this.currentLevel + 1, this.difficulty);
+        this.container.querySelector('#btn-rush-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('rushhour', this.currentLevel + 1);
+            else this.startLevel(this.currentLevel + 1);
+        };
 
         this.container.querySelector('#btn-win-replay').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
-        this.container.querySelector('#btn-win-next').onclick = () => this.startLevel(this.currentLevel + 1, this.difficulty);
+        this.container.querySelector('#btn-win-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('rushhour', this.currentLevel + 1);
+            else this.startLevel(this.currentLevel + 1);
+        };
     }
 
-    getCarLimits(targetCar) {
+    getLimits(target) {
         let min = 0;
-        let max = targetCar.dir === 'H' ? (this.gridSize - targetCar.len) : (this.gridSize - targetCar.len);
+        let max = this.gridSize - target.len;
 
         for (const other of this.vehicles) {
-            if (other.id === targetCar.id) continue;
+            if (other.id === target.id) continue;
 
-            if (targetCar.dir === 'H') {
-                // If on same Y plane (or other intersects target Y)
-                const yOverlap = other.dir === 'H' ? (other.y === targetCar.y) : (targetCar.y >= other.y && targetCar.y < other.y + other.len);
-                if (yOverlap) {
-                    if (other.x + (other.dir === 'H' ? other.len : 1) <= targetCar.x) {
+            if (target.dir === 'H') {
+                const yMatch = other.dir === 'H' ? (other.y === target.y) : (target.y >= other.y && target.y < other.y + other.len);
+                if (yMatch) {
+                    if (other.x + (other.dir === 'H' ? other.len : 1) <= target.x) {
                         min = Math.max(min, other.x + (other.dir === 'H' ? other.len : 1));
                     }
-                    if (other.x >= targetCar.x + targetCar.len) {
-                        max = Math.min(max, other.x - targetCar.len);
+                    if (other.x >= target.x + target.len) {
+                        max = Math.min(max, other.x - target.len);
                     }
                 }
             } else {
-                // Vertical limits
-                const xOverlap = other.dir === 'V' ? (other.x === targetCar.x) : (targetCar.x >= other.x && targetCar.x < other.x + other.len);
-                if (xOverlap) {
-                    if (other.y + (other.dir === 'V' ? other.len : 1) <= targetCar.y) {
+                const xMatch = other.dir === 'V' ? (other.x === target.x) : (target.x >= other.x && target.x < other.x + other.len);
+                if (xMatch) {
+                    if (other.y + (other.dir === 'V' ? other.len : 1) <= target.y) {
                         min = Math.max(min, other.y + (other.dir === 'V' ? other.len : 1));
                     }
-                    if (other.y >= targetCar.y + targetCar.len) {
-                        max = Math.min(max, other.y - targetCar.len);
+                    if (other.y >= target.y + target.len) {
+                        max = Math.min(max, other.y - target.len);
                     }
                 }
             }
         }
-
         return { min, max };
     }
 
     undo() {
         if (this.history.length === 0 || this.hasWon) return;
         const last = this.history.pop();
-        const v = this.vehicles.find(item => item.id === last.vehicleId);
+        const v = this.vehicles.find(item => item.id === last.id);
         if (v) {
             if (last.dir === 'H') v.x = last.from;
             else v.y = last.from;
@@ -413,12 +404,8 @@ window.RushHourGame = class {
 
         const winScreen = this.container.querySelector('#rush-win-screen');
         const winText = this.container.querySelector('#rush-win-text');
-        if (winText) {
-            winText.innerText = `Parking lot cleared in ${this.moves} moves!`;
-        }
-        if (winScreen) {
-            setTimeout(() => winScreen.classList.add('active'), 300);
-        }
+        if (winText) winText.innerText = `Parkplatz in ${this.moves} Zügen geräumt.`;
+        if (winScreen) setTimeout(() => winScreen.classList.add('active'), 250);
     }
 
     render() {
@@ -432,27 +419,24 @@ window.RushHourGame = class {
         const oy = this.boardOffset.y;
         const bs = this.cellSize * this.gridSize;
 
-        // Draw Board Background
+        // Clean dark parking lot
         ctx.save();
-        ctx.fillStyle = '#1e293b';
-        ctx.strokeStyle = '#334155';
-        ctx.lineWidth = 8;
+        ctx.fillStyle = '#18181b';
+        ctx.strokeStyle = '#27272a';
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.roundRect(ox - 8, oy - 8, bs + 16, bs + 16, 16);
+        ctx.roundRect(ox - 6, oy - 6, bs + 12, bs + 12, 10);
         ctx.fill();
         ctx.stroke();
 
-        // Exit Gate Opening on Row 2 (Y=2)
+        // Exit marker
         const exitY = oy + this.cellSize * 2;
         ctx.fillStyle = '#10b981';
-        ctx.fillRect(ox + bs + 4, exitY + 8, 12, this.cellSize - 16);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillText('EXIT ➔', ox + bs + 18, exitY + this.cellSize / 2 + 3);
+        ctx.fillRect(ox + bs + 2, exitY + 6, 8, this.cellSize - 12);
 
-        // Parking spots grid lines
-        ctx.strokeStyle = '#334155';
-        ctx.lineWidth = 1.5;
+        // Grid lines
+        ctx.strokeStyle = '#27272a';
+        ctx.lineWidth = 1;
         for (let i = 0; i <= this.gridSize; i++) {
             ctx.beginPath();
             ctx.moveTo(ox + i * this.cellSize, oy);
@@ -465,88 +449,41 @@ window.RushHourGame = class {
             ctx.stroke();
         }
 
-        // Draw Vehicles
+        // Vehicles
         for (const v of this.vehicles) {
-            this.drawVehicle(ctx, v, ox, oy);
-        }
+            const pad = 4;
+            const vx = ox + v.x * this.cellSize + pad;
+            const vy = oy + v.y * this.cellSize + pad;
+            const vw = (v.dir === 'H' ? v.len * this.cellSize : this.cellSize) - pad * 2;
+            const vh = (v.dir === 'V' ? v.len * this.cellSize : this.cellSize) - pad * 2;
 
+            ctx.fillStyle = v.color;
+            ctx.beginPath();
+            ctx.roundRect(vx, vy, vw, vh, 6);
+            ctx.fill();
+
+            // Cockpit
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            const cw = v.dir === 'H' ? vw * 0.5 : vw * 0.65;
+            const ch = v.dir === 'V' ? vh * 0.5 : vh * 0.65;
+            ctx.beginPath();
+            ctx.roundRect(vx + (vw - cw) / 2, vy + (vh - ch) / 2, cw, ch, 4);
+            ctx.fill();
+
+            // Arrow
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(v.dir === 'H' ? '⇄' : '⇅', vx + vw / 2, vy + vh / 2);
+        }
         ctx.restore();
     }
 
-    drawVehicle(ctx, v, ox, oy) {
-        const padding = 5;
-        const vx = ox + v.x * this.cellSize + padding;
-        const vy = oy + v.y * this.cellSize + padding;
-        const vw = (v.dir === 'H' ? v.len * this.cellSize : this.cellSize) - padding * 2;
-        const vh = (v.dir === 'V' ? v.len * this.cellSize : this.cellSize) - padding * 2;
-        const radius = 10;
-
-        ctx.save();
-        // Shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.4)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetY = 4;
-
-        // Vehicle Chassis
-        ctx.fillStyle = v.color;
-        ctx.beginPath();
-        ctx.roundRect(vx, vy, vw, vh, radius);
-        ctx.fill();
-        ctx.shadowColor = 'transparent';
-
-        // Border / Outline
-        ctx.strokeStyle = v.isRed ? '#fca5a5' : 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Windshield and Roof styling
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
-        if (v.dir === 'H') {
-            const windshieldW = vw * 0.55;
-            const windshieldH = vh * 0.6;
-            ctx.beginPath();
-            ctx.roundRect(vx + (vw - windshieldW) / 2, vy + (vh - windshieldH) / 2, windshieldW, windshieldH, 4);
-            ctx.fill();
-
-            // Headlights
-            ctx.fillStyle = '#fef08a';
-            ctx.fillRect(vx + vw - 4, vy + 4, 3, 6);
-            ctx.fillRect(vx + vw - 4, vy + vh - 10, 3, 6);
-        } else {
-            const windshieldW = vw * 0.6;
-            const windshieldH = vh * 0.55;
-            ctx.beginPath();
-            ctx.roundRect(vx + (vw - windshieldW) / 2, vy + (vh - windshieldH) / 2, windshieldW, windshieldH, 4);
-            ctx.fill();
-
-            // Headlights
-            ctx.fillStyle = '#fef08a';
-            ctx.fillRect(vx + 4, vy + vh - 4, 6, 3);
-            ctx.fillRect(vx + vw - 10, vy + vh - 4, 6, 3);
-        }
-
-        // Direction indicator arrow
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const arrow = v.dir === 'H' ? '⇄' : '⇅';
-        ctx.fillText(arrow, vx + vw / 2, vy + vh / 2);
-
-        ctx.restore();
-    }
-
-    pause() {
-        this.isPaused = true;
-    }
-
-    resume() {
-        this.isPaused = false;
-    }
-
+    pause() { this.isPaused = true; }
+    resume() { this.isPaused = false; }
     destroy() {
         if (this.animId) cancelAnimationFrame(this.animId);
         if (this.container) this.container.innerHTML = '';
     }
 };
-

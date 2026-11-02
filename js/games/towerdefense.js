@@ -1,7 +1,7 @@
 /**
  * Cyber Siege - Tower Defense Game
- * Built with Canvas 2D. Features procedural pathways, multiple turret types with upgrades,
- * elemental effects (freeze, chain lightning, splash), wave bosses and multiple levels.
+ * Levels 1 - 100+ with procedural road paths, turret upgrades,
+ * elemental effects, wave scaling and boss tiers.
  */
 
 window.TowerDefenseGame = class {
@@ -15,27 +15,25 @@ window.TowerDefenseGame = class {
         this.credits = 350;
         this.lives = 20;
         this.wave = 1;
-        this.maxWaves = 15;
+        this.maxWaves = 10;
         this.currentLevel = 1;
-        this.difficulty = 'Normal';
+        this.difficulty = 'Einfach';
 
         this.waypoints = [];
         this.turrets = [];
         this.enemies = [];
         this.projectiles = [];
-        this.particles = [];
 
         this.selectedTowerType = 'blaster';
-        this.selectedTurret = null;
         this.waveInProgress = false;
         this.waveSpawnTimer = 0;
         this.enemiesToSpawn = [];
 
         this.towerTypes = {
-            blaster: { name: 'Gatling', cost: 100, range: 110, rate: 0.18, damage: 18, color: '#3b82f6' },
-            plasma: { name: 'Plasma AOE', cost: 180, range: 130, rate: 0.7, damage: 45, splash: 50, color: '#f59e0b' },
-            cryo: { name: 'Cryo Frost', cost: 140, range: 95, rate: 0.5, damage: 12, slow: 0.5, color: '#06b6d4' },
-            tesla: { name: 'Tesla Coil', cost: 240, range: 125, rate: 0.8, damage: 60, chain: 3, color: '#a855f7' }
+            blaster: { name: 'Gatling', cost: 100, range: 110, rate: 0.18, damage: 20, color: '#3b82f6' },
+            plasma: { name: 'Plasma', cost: 180, range: 130, rate: 0.65, damage: 50, splash: 50, color: '#f59e0b' },
+            cryo: { name: 'Cryo', cost: 140, range: 100, rate: 0.45, damage: 14, slow: 0.5, color: '#06b6d4' },
+            tesla: { name: 'Tesla', cost: 240, range: 125, rate: 0.75, damage: 70, chain: 3, color: '#a855f7' }
         };
     }
 
@@ -48,50 +46,35 @@ window.TowerDefenseGame = class {
         this.ctx = this.canvas.getContext('2d');
         this.container.appendChild(this.canvas);
 
-        // Top HUD
         const hud = document.createElement('div');
         hud.className = 'rush-hud';
         hud.innerHTML = `
             <div class="rush-stat">Credits: <span class="rush-stat-val" style="color:#fbbf24;" id="td-credits">$350</span></div>
-            <div class="rush-stat">Lives: <span class="rush-stat-val" style="color:#ef4444;" id="td-lives">20</span></div>
-            <div class="rush-stat">Wave: <span class="rush-stat-val" id="td-wave">1/15</span></div>
-            <button class="btn-game-action" id="btn-td-wave" style="background:#10b981; border-color:#10b981;">▶ Start Wave</button>
+            <div class="rush-stat">Leben: <span class="rush-stat-val" style="color:#ef4444;" id="td-lives">20</span></div>
+            <div class="rush-stat">Welle: <span class="rush-stat-val" id="td-wave">1/10</span></div>
+            <button class="btn-game-action" id="btn-td-wave">Welle starten</button>
         `;
         this.container.appendChild(hud);
 
-        // Tower Shop Bar
         const shop = document.createElement('div');
         shop.className = 'td-shop';
         shop.innerHTML = `
-            <div class="td-tower-card selected" data-type="blaster">
-                <div class="td-tower-name">Gatling</div>
-                <div class="td-tower-cost">$100</div>
-            </div>
-            <div class="td-tower-card" data-type="plasma">
-                <div class="td-tower-name">Plasma</div>
-                <div class="td-tower-cost">$180</div>
-            </div>
-            <div class="td-tower-card" data-type="cryo">
-                <div class="td-tower-name">Cryo</div>
-                <div class="td-tower-cost">$140</div>
-            </div>
-            <div class="td-tower-card" data-type="tesla">
-                <div class="td-tower-name">Tesla</div>
-                <div class="td-tower-cost">$240</div>
-            </div>
+            <div class="td-tower-card selected" data-type="blaster"><div class="td-tower-name">Gatling</div><div class="td-tower-cost">$100</div></div>
+            <div class="td-tower-card" data-type="plasma"><div class="td-tower-name">Plasma</div><div class="td-tower-cost">$180</div></div>
+            <div class="td-tower-card" data-type="cryo"><div class="td-tower-name">Cryo</div><div class="td-tower-cost">$140</div></div>
+            <div class="td-tower-card" data-type="tesla"><div class="td-tower-name">Tesla</div><div class="td-tower-cost">$240</div></div>
         `;
         this.container.appendChild(shop);
 
-        // Win Overlay
         const win = document.createElement('div');
         win.className = 'game-win-overlay';
         win.id = 'td-win-screen';
         win.innerHTML = `
-            <div class="win-title" id="td-win-title">SECTOR CLEARED! 🛡️</div>
-            <div class="win-subtitle" id="td-win-sub">All enemy waves repelled!</div>
-            <div style="display:flex; gap:12px;">
-                <button class="btn-game-action" id="btn-td-replay">Replay Sector</button>
-                <button class="btn-game-action" style="background:#10b981; border-color:#10b981;" id="btn-td-next">Next Sector ➔</button>
+            <div class="win-title">SEKTOR BEREINIGT!</div>
+            <div class="win-subtitle" id="td-win-sub">Alle Wellen erfolgreich abgewehrt.</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-game-action" id="btn-td-replay">Wiederholen</button>
+                <button class="btn-game-action" style="background:#2563eb; color:#fff;" id="btn-td-next">Nächster Sektor ➔</button>
             </div>
         `;
         this.container.appendChild(win);
@@ -100,7 +83,9 @@ window.TowerDefenseGame = class {
         this.resize();
 
         const lvl = options.levelIndex || 1;
-        this.startLevel(lvl, options.difficulty || 'Normal');
+        this.startLevel(lvl, options.difficulty || 'Einfach');
+
+        requestAnimationFrame(() => this.resize());
 
         this.lastTime = performance.now();
         this.loop = this.loop.bind(this);
@@ -108,21 +93,25 @@ window.TowerDefenseGame = class {
     }
 
     resize() {
+        if (!this.container || !this.canvas) return;
         const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        const w = rect.width > 50 ? rect.width : (window.innerWidth || 800);
+        const h = rect.height > 50 ? rect.height : (window.innerHeight - 48 || 600);
+
+        this.canvas.width = w;
+        this.canvas.height = h;
     }
 
-    startLevel(levelIndex = 1, difficulty = 'Normal') {
+    startLevel(levelIndex = 1, difficulty = 'Einfach') {
         this.currentLevel = levelIndex;
         this.difficulty = difficulty;
-        this.credits = 350 + (levelIndex * 50);
+        this.credits = 350 + (levelIndex * 25);
         this.lives = 20;
         this.wave = 1;
+        this.maxWaves = 8 + Math.min(12, Math.floor(levelIndex / 4));
         this.turrets = [];
         this.enemies = [];
         this.projectiles = [];
-        this.particles = [];
         this.waveInProgress = false;
 
         const winScreen = this.container.querySelector('#td-win-screen');
@@ -136,9 +125,9 @@ window.TowerDefenseGame = class {
         const w = this.canvas.width || 800;
         const h = this.canvas.height || 600;
 
-        // Waypoints based on level shape
-        if (levelIndex === 1) {
-            // S-Curve
+        // Path geometry changes dynamically per level
+        const variant = levelIndex % 3;
+        if (variant === 1) {
             this.waypoints = [
                 { x: 0, y: h * 0.25 },
                 { x: w * 0.75, y: h * 0.25 },
@@ -147,8 +136,7 @@ window.TowerDefenseGame = class {
                 { x: w * 0.25, y: h * 0.85 },
                 { x: w + 40, y: h * 0.85 }
             ];
-        } else if (levelIndex === 2) {
-            // Spiral / Double loop
+        } else if (variant === 2) {
             this.waypoints = [
                 { x: 0, y: h * 0.2 },
                 { x: w * 0.85, y: h * 0.2 },
@@ -158,7 +146,6 @@ window.TowerDefenseGame = class {
                 { x: w + 40, y: h * 0.5 }
             ];
         } else {
-            // Zig-Zag Maze
             this.waypoints = [
                 { x: 0, y: h * 0.15 },
                 { x: w * 0.8, y: h * 0.15 },
@@ -176,7 +163,6 @@ window.TowerDefenseGame = class {
             this.generatePath(this.currentLevel);
         });
 
-        // Shop Tower selection
         const cards = this.container.querySelectorAll('.td-tower-card');
         cards.forEach(card => {
             card.onclick = () => {
@@ -187,34 +173,29 @@ window.TowerDefenseGame = class {
             };
         });
 
-        // Start wave button
-        this.container.querySelector('#btn-td-wave').onclick = () => {
-            this.startNextWave();
-        };
+        this.container.querySelector('#btn-td-wave').onclick = () => this.startNextWave();
 
-        // Canvas click = place tower
         this.canvas.addEventListener('click', (e) => {
             const rect = this.canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            this.handleCanvasClick(x, y);
+            this.handleCanvasClick(e.clientX - rect.left, e.clientY - rect.top);
         });
 
-        this.container.querySelector('#btn-td-replay').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
-        this.container.querySelector('#btn-td-next').onclick = () => this.startLevel(this.currentLevel + 1, this.difficulty);
+        this.container.querySelector('#btn-td-replay').onclick = () => this.startLevel(this.currentLevel);
+        this.container.querySelector('#btn-td-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('towerdefense', this.currentLevel + 1);
+            else this.startLevel(this.currentLevel + 1);
+        };
     }
 
     handleCanvasClick(x, y) {
-        // Check if clicked near road
-        if (this.isNearPath(x, y, 35)) return;
+        if (this.isNearPath(x, y, 32)) return;
 
-        // Check if existing turret
+        // Upgrade existing
         for (const t of this.turrets) {
-            if (Math.hypot(t.x - x, t.y - y) < 25) {
-                // Upgrade turret if enough credits
-                const upgradeCost = Math.floor(t.cost * 0.7);
-                if (this.credits >= upgradeCost) {
-                    this.credits -= upgradeCost;
+            if (Math.hypot(t.x - x, t.y - y) < 22) {
+                const cost = Math.floor(t.cost * 0.7);
+                if (this.credits >= cost) {
+                    this.credits -= cost;
                     t.level++;
                     t.damage = Math.floor(t.damage * 1.4);
                     t.range += 15;
@@ -225,21 +206,19 @@ window.TowerDefenseGame = class {
             }
         }
 
-        // Place new turret
+        // Place new
         const info = this.towerTypes[this.selectedTowerType];
         if (this.credits >= info.cost) {
             this.credits -= info.cost;
             this.turrets.push({
                 x, y,
                 type: this.selectedTowerType,
-                name: info.name,
                 cost: info.cost,
                 range: info.range,
                 rate: info.rate,
                 damage: info.damage,
                 splash: info.splash || 0,
                 slow: info.slow || 0,
-                chain: info.chain || 0,
                 color: info.color,
                 cooldown: 0,
                 level: 1
@@ -253,8 +232,7 @@ window.TowerDefenseGame = class {
         for (let i = 0; i < this.waypoints.length - 1; i++) {
             const p1 = this.waypoints[i];
             const p2 = this.waypoints[i + 1];
-            const dist = this.distToSegment({ x, y }, p1, p2);
-            if (dist < threshold) return true;
+            if (this.distToSegment({ x, y }, p1, p2) < threshold) return true;
         }
         return false;
     }
@@ -272,46 +250,43 @@ window.TowerDefenseGame = class {
         this.waveInProgress = true;
         this.enemiesToSpawn = [];
 
-        const count = 8 + this.wave * 3;
-        const isBossWave = (this.wave % 5 === 0);
+        const count = 7 + this.wave * 3;
+        const hpMultiplier = 1 + (this.currentLevel * 0.15);
 
         for (let i = 0; i < count; i++) {
-            const hp = (30 + this.wave * 18) * (this.difficulty === 'Hard' ? 1.4 : 1.0);
+            const hp = Math.floor((30 + this.wave * 16) * hpMultiplier);
             this.enemiesToSpawn.push({
                 hp: hp,
                 maxHp: hp,
-                speed: 1.1 + (Math.random() * 0.4),
-                radius: 12,
+                speed: 1.0 + (Math.random() * 0.35),
+                radius: 10,
                 color: '#ef4444',
-                reward: 15 + this.wave * 2
+                reward: 12 + this.wave * 2
             });
         }
 
-        if (isBossWave) {
-            const bossHp = 400 + this.wave * 120;
+        if (this.wave % 4 === 0) {
+            const bossHp = Math.floor((350 + this.wave * 100) * hpMultiplier);
             this.enemiesToSpawn.push({
                 hp: bossHp,
                 maxHp: bossHp,
-                speed: 0.7,
-                radius: 22,
+                speed: 0.65,
+                radius: 18,
                 color: '#ec4899',
-                reward: 120,
+                reward: 100,
                 isBoss: true
             });
         }
-
         this.waveSpawnTimer = 0;
-        if (window.AudioManager) window.AudioManager.playSelect();
     }
 
     updateHUD() {
-        const credEl = this.container.querySelector('#td-credits');
-        const livesEl = this.container.querySelector('#td-lives');
-        const waveEl = this.container.querySelector('#td-wave');
-
-        if (credEl) credEl.innerText = `$${this.credits}`;
-        if (livesEl) livesEl.innerText = `${this.lives}`;
-        if (waveEl) waveEl.innerText = `${this.wave}/${this.maxWaves}`;
+        const cEl = this.container.querySelector('#td-credits');
+        const lEl = this.container.querySelector('#td-lives');
+        const wEl = this.container.querySelector('#td-wave');
+        if (cEl) cEl.innerText = `$${this.credits}`;
+        if (lEl) lEl.innerText = `${this.lives}`;
+        if (wEl) wEl.innerText = `${this.wave}/${this.maxWaves}`;
     }
 
     loop(time) {
@@ -326,7 +301,6 @@ window.TowerDefenseGame = class {
     }
 
     update(delta) {
-        // Spawn queued enemies
         if (this.enemiesToSpawn.length > 0) {
             this.waveSpawnTimer -= delta;
             if (this.waveSpawnTimer <= 0) {
@@ -336,12 +310,11 @@ window.TowerDefenseGame = class {
                 en.y = this.waypoints[0].y;
                 en.slowTimer = 0;
                 this.enemies.push(en);
-                this.waveSpawnTimer = 0.65;
+                this.waveSpawnTimer = 0.6;
             }
         } else if (this.enemies.length === 0 && this.waveInProgress) {
-            // Wave ended
             this.waveInProgress = false;
-            this.credits += 50 + this.wave * 10;
+            this.credits += 45 + this.wave * 8;
             this.wave++;
             this.updateHUD();
 
@@ -350,19 +323,18 @@ window.TowerDefenseGame = class {
             }
         }
 
-        // Update enemies
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const en = this.enemies[i];
             const target = this.waypoints[en.waypointIdx + 1];
 
             if (!target) {
-                // Reached end
                 this.lives--;
                 this.enemies.splice(i, 1);
                 this.updateHUD();
                 if (window.AudioManager) window.AudioManager.playHit();
                 if (this.lives <= 0) {
-                    this.triggerGameOver();
+                    alert('Basis überrannt! Level wird neu gestartet.');
+                    this.startLevel(this.currentLevel);
                 }
                 continue;
             }
@@ -382,11 +354,9 @@ window.TowerDefenseGame = class {
             }
         }
 
-        // Update Turrets & Firing
         this.turrets.forEach(t => {
             t.cooldown -= delta;
             if (t.cooldown <= 0) {
-                // Find enemy in range
                 let target = null;
                 let minDist = t.range;
 
@@ -400,21 +370,46 @@ window.TowerDefenseGame = class {
 
                 if (target) {
                     t.cooldown = t.rate;
-                    this.fireProjectile(t, target);
+                    this.projectiles.push({
+                        x: t.x, y: t.y,
+                        target: target,
+                        damage: t.damage,
+                        splash: t.splash,
+                        slow: t.slow,
+                        color: t.color,
+                        speed: 420
+                    });
+                    if (window.AudioManager) window.AudioManager.playLaser();
                 }
             }
         });
 
-        // Update projectiles
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const p = this.projectiles[i];
             const dx = p.target.x - p.x;
             const dy = p.target.y - p.y;
             const dist = Math.hypot(dx, dy);
 
-            if (dist < 10 || !this.enemies.includes(p.target)) {
-                // Hit
-                this.hitEnemy(p);
+            if (dist < 12 || !this.enemies.includes(p.target)) {
+                if (p.splash > 0) {
+                    for (const en of this.enemies) {
+                        if (Math.hypot(en.x - p.x, en.y - p.y) < p.splash) {
+                            en.hp -= p.damage;
+                        }
+                    }
+                } else {
+                    p.target.hp -= p.damage;
+                    if (p.slow > 0) p.target.slowTimer = 2.0;
+                }
+
+                for (let e = this.enemies.length - 1; e >= 0; e--) {
+                    if (this.enemies[e].hp <= 0) {
+                        this.credits += this.enemies[e].reward;
+                        this.enemies.splice(e, 1);
+                        this.updateHUD();
+                        if (window.AudioManager) window.AudioManager.playExplosion();
+                    }
+                }
                 this.projectiles.splice(i, 1);
             } else {
                 p.x += (dx / dist) * p.speed * delta;
@@ -423,52 +418,14 @@ window.TowerDefenseGame = class {
         }
     }
 
-    fireProjectile(turret, target) {
-        this.projectiles.push({
-            x: turret.x,
-            y: turret.y,
-            target: target,
-            damage: turret.damage,
-            splash: turret.splash,
-            slow: turret.slow,
-            color: turret.color,
-            speed: 400
-        });
-        if (window.AudioManager) window.AudioManager.playLaser();
-    }
-
-    hitEnemy(p) {
-        if (p.splash > 0) {
-            for (const en of this.enemies) {
-                if (Math.hypot(en.x - p.x, en.y - p.y) < p.splash) {
-                    en.hp -= p.damage;
-                }
-            }
-        } else {
-            p.target.hp -= p.damage;
-            if (p.slow > 0) p.target.slowTimer = 2.0;
-        }
-
-        // Clean dead enemies
-        for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const en = this.enemies[i];
-            if (en.hp <= 0) {
-                this.credits += en.reward;
-                this.enemies.splice(i, 1);
-                this.updateHUD();
-                if (window.AudioManager) window.AudioManager.playExplosion();
-            }
-        }
-    }
-
     render() {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw Road / Path
+        // Path
         ctx.save();
-        ctx.strokeStyle = '#334155';
-        ctx.lineWidth = 42;
+        ctx.strokeStyle = '#27272a';
+        ctx.lineWidth = 36;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
@@ -478,32 +435,31 @@ window.TowerDefenseGame = class {
         });
         ctx.stroke();
 
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 36;
+        ctx.strokeStyle = '#18181b';
+        ctx.lineWidth = 30;
         ctx.stroke();
         ctx.restore();
 
-        // Draw Turrets
+        // Turrets
         for (const t of this.turrets) {
             ctx.save();
             ctx.fillStyle = t.color;
             ctx.beginPath();
-            ctx.arc(t.x, t.y, 16, 0, Math.PI * 2);
+            ctx.arc(t.x, t.y, 14, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#fff';
+            ctx.strokeStyle = '#27272a';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Turret level badge
             if (t.level > 1) {
                 ctx.fillStyle = '#fbbf24';
-                ctx.font = 'bold 10px sans-serif';
-                ctx.fillText(`+${t.level}`, t.x - 6, t.y - 20);
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText(`+${t.level}`, t.x - 5, t.y - 18);
             }
             ctx.restore();
         }
 
-        // Draw Enemies
+        // Enemies
         for (const en of this.enemies) {
             ctx.save();
             ctx.fillStyle = en.slowTimer > 0 ? '#38bdf8' : en.color;
@@ -511,23 +467,20 @@ window.TowerDefenseGame = class {
             ctx.arc(en.x, en.y, en.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Health bar
             const barW = en.radius * 2;
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(en.x - en.radius, en.y - en.radius - 8, barW, 4);
+            ctx.fillStyle = '#18181b';
+            ctx.fillRect(en.x - en.radius, en.y - en.radius - 6, barW, 3);
             ctx.fillStyle = '#10b981';
-            ctx.fillRect(en.x - en.radius, en.y - en.radius - 8, barW * (en.hp / en.maxHp), 4);
+            ctx.fillRect(en.x - en.radius, en.y - en.radius - 6, barW * (en.hp / en.maxHp), 3);
             ctx.restore();
         }
 
-        // Draw Projectiles
+        // Projectiles
         for (const p of this.projectiles) {
-            ctx.save();
             ctx.fillStyle = p.color;
             ctx.beginPath();
             ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
             ctx.fill();
-            ctx.restore();
         }
     }
 
@@ -537,11 +490,6 @@ window.TowerDefenseGame = class {
         if (winScreen) winScreen.classList.add('active');
     }
 
-    triggerGameOver() {
-        alert('Base overrun! Try again.');
-        this.startLevel(this.currentLevel, this.difficulty);
-    }
-
     pause() { this.isPaused = true; }
     resume() { this.isPaused = false; this.lastTime = performance.now(); }
     destroy() {
@@ -549,4 +497,3 @@ window.TowerDefenseGame = class {
         if (this.container) this.container.innerHTML = '';
     }
 };
-

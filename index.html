@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade Realm - High Quality Browser Games</title>
-    <!-- Stylesheets -->
+    <title>Arcade Realm - Browser Games Portal</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/games.css">
     <link rel="stylesheet" href="css/doc-stealth.css">
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <!-- Three.js CDN for 3D Graphics -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -20,27 +17,23 @@
     <!-- Header Navigation -->
     <header class="app-header">
         <div class="brand" onclick="window.portal && window.portal.closeActiveGame()">
-            <div class="brand-icon">🎮</div>
+            <div class="brand-icon">AR</div>
             <span class="brand-title">Arcade Realm</span>
-            <span class="brand-tag">Web Portal</span>
         </div>
 
         <div class="header-actions">
-            <button class="action-btn" id="btn-mute" title="Sound ein-/ausschalten">🔊 Sound</button>
-            <button class="action-btn" id="btn-fullscreen" title="Vollbildmodus aktivieren">⛶ Fullscreen</button>
-            <button class="action-btn btn-stealth" id="btn-stealth-boss" title="Tarnmodus (Google Docs Screen) - Taste 'B'">
-                🕵️ Stealth Mode <span class="key-badge">B</span>
-            </button>
+            <button class="action-btn" id="btn-mute" title="Sound umschalten">Sound</button>
+            <button class="action-btn" id="btn-fullscreen" title="Vollbildmodus">Vollbild</button>
         </div>
     </header>
 
-    <!-- Main Portal Hub View -->
+    <!-- Main Portal Hub -->
     <main class="portal-container" id="portal-hub">
         <!-- Hero Section -->
         <section class="hero-banner">
             <div class="hero-content">
-                <h1>Willkommen im Arcade Realm</h1>
-                <p>Hochwertige lokale Browsergames direkt spielbar oder auf GitHub Pages. Enthält 3D Voxel-Welten, Rennspiele, Puzzle, Strategiespiele und den praktischen <strong>Stealth Boss Key (Taste 'B')</strong> mit sofortigem Google Docs Tarnbildschirm.</p>
+                <h1>Web Game Portal</h1>
+                <p>Eine kuratierte Sammlung modularer Browsergames mit dynamischer Level-Generierung (1 - 100+), 3D- und 2D-Engines sowie optimierter lokaler Performance ohne Backend-Abhängigkeiten.</p>
             </div>
             <div class="hero-stats">
                 <div class="stat-box">
@@ -48,62 +41,55 @@
                     <div class="stat-label">Spiele</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-number">50+</div>
-                    <div class="stat-label">Levels</div>
+                    <div class="stat-number">1-100+</div>
+                    <div class="stat-label">Level Skalierung</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-number">100%</div>
-                    <div class="stat-label">Lokal / Offline</div>
+                    <div class="stat-number">0ms</div>
+                    <div class="stat-label">Server Latenz</div>
                 </div>
             </div>
         </section>
 
-        <!-- Category Filters & Search -->
+        <!-- Category Filter & Search -->
         <section class="filter-bar">
             <div class="category-pills">
-                <button class="category-pill active" data-category="all">Alle Spiele</button>
-                <button class="category-pill" data-category="3d">3D Welten & Racing</button>
-                <button class="category-pill" data-category="puzzle">Puzzle & Denkspiele</button>
+                <button class="category-pill active" data-category="all">Alle</button>
+                <button class="category-pill" data-category="3d">3D</button>
+                <button class="category-pill" data-category="puzzle">Puzzle</button>
                 <button class="category-pill" data-category="strategy">Strategie</button>
-                <button class="category-pill" data-category="action">Action & Platformer</button>
-                <button class="category-pill" data-category="arcade">Arcade & Shooter</button>
-                <button class="category-pill" data-category="rpg">RPG & Dungeon</button>
+                <button class="category-pill" data-category="action">Action</button>
+                <button class="category-pill" data-category="arcade">Arcade</button>
+                <button class="category-pill" data-category="rpg">RPG</button>
             </div>
 
             <div class="search-input-wrapper">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="search-games" placeholder="Spiel nach Namen suchen...">
+                <span class="search-icon">⚲</span>
+                <input type="text" id="search-games" placeholder="Suchen...">
             </div>
         </section>
 
         <!-- Games Grid -->
-        <section class="games-grid" id="games-grid">
-            <!-- Dynamic Game Cards populated by portal.js -->
-        </section>
+        <section class="games-grid" id="games-grid"></section>
     </main>
 
-    <!-- Active Game Screen / Viewport -->
+    <!-- Active Game Screen -->
     <div class="game-viewport-modal" id="game-viewport">
         <div class="game-topbar">
             <div class="game-topbar-left">
-                <button class="btn-back-portal" id="btn-back-hub">
-                    ◀ Spiel beenden
-                </button>
+                <button class="btn-back-portal" id="btn-back-hub">◀ Zurück</button>
                 <span class="game-active-title" id="active-game-title">Game Title</span>
             </div>
 
             <div class="game-topbar-center">
-                <div class="level-indicator-pill" id="active-level-indicator" title="Level wechseln">
-                    Level 1 (Normal) ▾
+                <div class="level-indicator-pill" id="active-level-indicator" title="Level wählen">
+                    Level 1 ▾
                 </div>
             </div>
 
             <div class="game-topbar-right">
-                <button class="btn-game-action" id="btn-show-levels">Levels</button>
-                <button class="btn-game-action" id="btn-show-controls">Steuerung</button>
-                <button class="btn-game-action btn-stealth" onclick="window.portal.toggleBossScreen()" title="Google Docs Tarnung">
-                    Docs <span class="key-badge">B</span>
-                </button>
+                <button class="btn-back-portal" id="btn-show-levels">Level wählen</button>
+                <button class="btn-back-portal" id="btn-show-controls">Steuerung</button>
             </div>
         </div>
 
@@ -111,14 +97,22 @@
         <div class="game-canvas-container" id="game-container"></div>
     </div>
 
-    <!-- Level Select Modal Dialog -->
+    <!-- Level Select Modal Dialog (1 - 100+) -->
     <div class="modal-overlay" id="level-modal">
         <div class="modal-box">
             <div class="modal-header">
-                <div class="modal-title">Level auswählen</div>
+                <div class="modal-title">Level auswählen (1 - 100+)</div>
                 <button class="modal-close-btn">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="level-modal-controls">
+                    <div class="level-page-tabs" id="level-page-tabs"></div>
+                    <div class="level-jump-wrapper">
+                        <span style="font-size:12px; color:var(--text-muted);">Level:</span>
+                        <input type="number" class="level-jump-input" id="level-jump-val" min="1" max="100" value="1">
+                        <button class="btn-back-portal" id="btn-level-jump">Go</button>
+                    </div>
+                </div>
                 <div class="level-grid" id="level-modal-grid"></div>
             </div>
         </div>
@@ -128,7 +122,7 @@
     <div class="modal-overlay" id="controls-modal">
         <div class="modal-box">
             <div class="modal-header">
-                <div class="modal-title">Steuerung & Tastenkombinationen</div>
+                <div class="modal-title">Steuerung</div>
                 <button class="modal-close-btn">&times;</button>
             </div>
             <div class="modal-body">
@@ -137,9 +131,8 @@
         </div>
     </div>
 
-    <!-- HYPER-REALISTIC GOOGLE DOCS STEALTH DECOY SCREEN -->
+    <!-- HYPER-REALISTIC GOOGLE DOCS STEALTH DECOY (Computer Science RFC with Code Examples) -->
     <div class="boss-screen" id="boss-screen-decoy">
-        <!-- Google Docs Header -->
         <div class="gdoc-header">
             <div class="gdoc-logo" title="Google Docs Home">
                 <svg viewBox="0 0 40 40" fill="none">
@@ -151,9 +144,9 @@
 
             <div class="gdoc-title-container">
                 <div class="gdoc-title-row">
-                    <span class="gdoc-title" contenteditable="true">Q4 Strategic Operations & Budget Allocation 2026</span>
-                    <span class="gdoc-star" title="Mit Stern markieren">☆</span>
-                    <span class="gdoc-cloud" title="Alle Änderungen in Drive gespeichert">☁✓</span>
+                    <span class="gdoc-title" contenteditable="true">RFC-4092: Lock-Free Distributed Ring Cache Architecture & Memory Model</span>
+                    <span class="gdoc-star" title="Stern">☆</span>
+                    <span class="gdoc-cloud" title="Gespeichert">☁✓</span>
                 </div>
                 <div class="gdoc-menu-row">
                     <span class="gdoc-menu-item">Datei</span>
@@ -168,125 +161,148 @@
             </div>
 
             <div class="gdoc-header-actions">
-                <div class="gdoc-history-btn">Letzte Bearbeitung vor 3 Minuten</div>
-                <button class="gdoc-share-btn">
-                    🔒 Freigeben
-                </button>
-                <div class="gdoc-user-avatar">J</div>
+                <div class="gdoc-history-btn">Zuletzt bearbeitet vor 2 Min.</div>
+                <button class="gdoc-share-btn">🔒 Freigeben</button>
+                <div class="gdoc-user-avatar">D</div>
             </div>
         </div>
 
-        <!-- Google Docs Toolbar -->
         <div class="gdoc-toolbar">
-            <button class="gdoc-tool-btn" title="Rückgängig (Ctrl+Z)">↶</button>
-            <button class="gdoc-tool-btn" title="Wiederholen (Ctrl+Y)">↷</button>
-            <button class="gdoc-tool-btn" title="Drucken (Ctrl+P)">🖨️</button>
-            <button class="gdoc-tool-btn" title="Rechtschreibprüfung">✓</button>
+            <button class="gdoc-tool-btn" title="Undo">↶</button>
+            <button class="gdoc-tool-btn" title="Redo">↷</button>
+            <button class="gdoc-tool-btn" title="Print">🖨️</button>
             <div class="gdoc-divider"></div>
-            <select class="gdoc-tool-select">
-                <option>100%</option>
-                <option>75%</option>
-                <option>125%</option>
-            </select>
+            <select class="gdoc-tool-select"><option>100%</option><option>90%</option></select>
             <div class="gdoc-divider"></div>
-            <select class="gdoc-tool-select">
-                <option>Normaler Text</option>
-                <option>Titel</option>
-                <option>Überschrift 1</option>
-            </select>
+            <select class="gdoc-tool-select"><option>Normaler Text</option><option>Titel</option></select>
             <div class="gdoc-divider"></div>
-            <select class="gdoc-tool-select">
-                <option>Arial</option>
-                <option>Calibri</option>
-                <option>Roboto</option>
-            </select>
-            <select class="gdoc-tool-select" style="width:50px;">
-                <option>11</option>
-                <option>12</option>
-                <option>14</option>
-            </select>
+            <select class="gdoc-tool-select"><option>Roboto</option><option>JetBrains Mono</option></select>
+            <select class="gdoc-tool-select" style="width:48px;"><option>10</option><option>11</option></select>
             <div class="gdoc-divider"></div>
             <button class="gdoc-tool-btn" style="font-weight:bold;">B</button>
             <button class="gdoc-tool-btn" style="font-style:italic;">I</button>
             <button class="gdoc-tool-btn" style="text-decoration:underline;">U</button>
-            <button class="gdoc-tool-btn" style="color:#1a73e8; font-weight:bold;">A</button>
-            <div class="gdoc-divider"></div>
-            <button class="gdoc-tool-btn">🔗</button>
-            <button class="gdoc-tool-btn">💬</button>
-            <button class="gdoc-tool-btn">🖼️</button>
             <div class="gdoc-divider"></div>
             <button class="gdoc-tool-btn">≡</button>
             <button class="gdoc-tool-btn">⁞≡</button>
-            <button class="gdoc-tool-btn">1≡</button>
         </div>
 
-        <!-- Google Docs Paper Workspace (Fully Editable) -->
+        <!-- Google Docs Technical Document Body (Fully Editable) -->
         <div class="gdoc-workspace">
             <div class="gdoc-page" contenteditable="true" spellcheck="false">
-                <h1>Executive Summary: Q4 Enterprise Strategy & Budget</h1>
-                <p><strong>Datum:</strong> 02. November 2026 | <strong>Verfasser:</strong> Management Board & Strategic Operations</p>
-                
-                <h2>1. Zielsetzung und Quartalsanalyse</h2>
-                <p>Im Rahmen der jährlichen Überprüfung der Geschäftsprozesse wurden die Kernmetriken des dritten Quartals detailliert analysiert. Die Umsatzentwicklung zeigt eine positive Tendenz im Vergleich zum Vorjahresquartal, insbesondere im Bereich der digitalen Distributionskanäle und Plattform-Services. Zur Maximierung der operativen Effizienz empfehlen wir eine Neugewichtung der Entwicklungsressourcen sowie eine gezielte Optimierung der Serverinfrastrukturen.</p>
+                <h1>RFC-4092: Lock-Free Distributed Ring Cache Architecture</h1>
+                <p><strong>Status:</strong> Draft / Review | <strong>Author:</strong> Core Infrastructure & Systems Engineering | <strong>Target:</strong> Q1 Production Rollout</p>
 
-                <h2>2. Budgetverteilung und Allokationsübersicht</h2>
+                <h2>1. System Overview & Problem Statement</h2>
+                <p>High-throughput distributed systems experience severe latency spikes when thread contention occurs on global reader-writer mutexes. In high-frequency ingestion nodes, locking the key-value cache layer degrades P99 latency past the 15ms target. This proposal specifies a lock-free circular ring buffer utilizing atomic Compare-And-Swap (CAS) semantics with cacheline-aligned memory paddings to completely eradicate false sharing across L1/L2 CPU caches.</p>
+
+                <h2>2. Memory Model & Concurrency Primitives</h2>
+                <p>The ring buffer allocates a power-of-two slot count <em>N</em>, allowing fast index masking via <code>index & (N - 1)</code> rather than expensive modulo operations. Cache line bouncing is eliminated by 64-byte padding between atomic head and tail pointers.</p>
+
+                <div class="gdoc-code-block">
+<span class="cm">// Rust Implementation: Lock-Free Sharded Atomic Ring Buffer</span>
+<span class="kw">pub struct</span> <span class="tp">CacheRing</span>&lt;T, <span class="kw">const</span> CAP: <span class="tp">usize</span>&gt; {
+    head: <span class="tp">CachePadded</span>&lt;<span class="tp">AtomicUsize</span>&gt;,
+    tail: <span class="tp">CachePadded</span>&lt;<span class="tp">AtomicUsize</span>&gt;,
+    buffer: [<span class="tp">UnsafeCell</span>&lt;<span class="tp">MaybeUninit</span>&lt;T&gt;&gt;; CAP],
+}
+
+<span class="kw">impl</span>&lt;T: <span class="tp">Send</span>, <span class="kw">const</span> CAP: <span class="tp">usize</span>&gt; <span class="tp">CacheRing</span>&lt;T, CAP&gt; {
+    <span class="kw">pub fn</span> <span class="fn">try_push</span>(&amp;<span class="kw">self</span>, value: T) -&gt; <span class="tp">Result</span>&lt;(), T&gt; {
+        <span class="kw">let mut</span> tail = <span class="kw">self</span>.tail.load(<span class="tp">Ordering</span>::<span class="tp">Relaxed</span>);
+        <span class="kw">loop</span> {
+            <span class="kw">let</span> head = <span class="kw">self</span>.head.load(<span class="tp">Ordering</span>::<span class="tp">Acquire</span>);
+            <span class="kw">if</span> tail.wrapping_sub(head) &gt;= CAP {
+                <span class="kw">return</span> <span class="tp">Err</span>(value); <span class="cm">// Buffer full</span>
+            }
+            <span class="kw">match</span> <span class="kw">self</span>.tail.compare_exchange_weak(
+                tail,
+                tail.wrapping_add(1),
+                <span class="tp">Ordering</span>::<span class="tp">Release</span>,
+                <span class="tp">Ordering</span>::<span class="tp">Relaxed</span>,
+            ) {
+                <span class="tp">Ok</span>(_) =&gt; {
+                    <span class="kw">let</span> slot = tail &amp; (CAP - 1);
+                    <span class="kw">unsafe</span> { (*<span class="kw">self</span>.buffer[slot].get()).write(value); }
+                    <span class="kw">return</span> <span class="tp">Ok</span>(());
+                }
+                <span class="tp">Err</span>(actual) =&gt; tail = actual,
+            }
+        }
+    }
+}
+                </div>
+
+                <h2>3. Consistent Hashing Ring Implementation</h2>
+                <p>For horizontal scale-out across cluster partitions, keys are distributed across a 64-bit MurmurHash3 space with 128 virtual vnodes per physical storage server to minimize reshuffling skew during pod rescheduling.</p>
+
+                <div class="gdoc-code-block">
+<span class="cm">// Go Partition Dispatcher using 64-bit Consistent Ring</span>
+<span class="kw">type</span> <span class="tp">ConsistentHashRing</span> <span class="kw">struct</span> {
+    sync.RWMutex
+    vnodes   <span class="kw">int</span>
+    ring     []<span class="tp">uint64</span>
+    nodeMap  <span class="kw">map</span>[<span class="tp">uint64</span>]<span class="tp">string</span>
+}
+
+<span class="kw">func</span> (r *<span class="tp">ConsistentHashRing</span>) <span class="fn">GetNode</span>(key <span class="kw">string</span>) <span class="kw">string</span> {
+    hash := murmur3.Sum64([]<span class="kw">byte</span>(key))
+    r.RLock()
+    <span class="kw">defer</span> r.RUnlock()
+
+    idx := sort.Search(len(r.ring), <span class="kw">func</span>(i <span class="kw">int</span>) <span class="kw">bool</span> {
+        <span class="kw">return</span> r.ring[i] &gt;= hash
+    })
+    <span class="kw">if</span> idx == len(r.ring) {
+        idx = 0 <span class="cm">// Wrap around ring</span>
+    }
+    <span class="kw">return</span> r.nodeMap[r.ring[idx]]
+}
+                </div>
+
+                <h2>4. Benchmark Results & Latency Distribution</h2>
                 <table class="gdoc-table">
                     <thead>
                         <tr>
-                            <th>Geschäftsbereich</th>
-                            <th>Budget Q3 (IST)</th>
-                            <th>Budget Q4 (PLAN)</th>
-                            <th>Abweichung</th>
-                        </th>
+                            <th>Strategy</th>
+                            <th>Throughput (ops/sec)</th>
+                            <th>P50 Latency</th>
+                            <th>P99 Latency</th>
+                            <th>CPU Core Saturation</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Softwareentwicklung & Cloud Services</td>
-                            <td>€ 420.000</td>
-                            <td>€ 465.000</td>
-                            <td>+ 10,7%</td>
+                            <td>Standard Mutex (Baseline)</td>
+                            <td>342,000 ops/s</td>
+                            <td>1.42 ms</td>
+                            <td>18.90 ms</td>
+                            <td>72% (Lock Contention)</td>
                         </tr>
                         <tr>
-                            <td>Marketing & Nutzerakquisition</td>
-                            <td>€ 185.000</td>
-                            <td>€ 210.000</td>
-                            <td>+ 13,5%</td>
+                            <td>Sharded RWMutex (16 Shards)</td>
+                            <td>1,840,000 ops/s</td>
+                            <td>0.38 ms</td>
+                            <td>4.12 ms</td>
+                            <td>88%</td>
                         </tr>
                         <tr>
-                            <td>Infrastruktur, Security & Datensicherheit</td>
-                            <td>€ 95.000</td>
-                            <td>€ 105.000</td>
-                            <td>+ 10,5%</td>
-                        </tr>
-                        <tr>
-                            <td>Operative Verwaltung & Lizenzen</td>
-                            <td>€ 60.000</td>
-                            <td>€ 58.000</td>
-                            <td>- 3,3%</td>
+                            <td><strong>Lock-Free CAS Ring (RFC-4092)</strong></td>
+                            <td><strong>6,950,000 ops/s</strong></td>
+                            <td><strong>0.06 ms</strong></td>
+                            <td><strong>0.41 ms</strong></td>
+                            <td><strong>99.4% (Zero Contention)</strong></td>
                         </tr>
                     </tbody>
                 </table>
-
-                <h2>3. Operative Meilensteine bis Q1 2027</h2>
-                <p>1. Abschluss der Performance-Audits auf sämtlichen Kunden-Endpoints zur Reduktion der Latenzzeiten auf unter 40ms.</p>
-                <p>2. Einführung des automatisierten Test-Frameworks zur kontinuierlichen Sicherstellung der Softwarestabilität und Plattform-Resilienz.</p>
-                <p>3. Durchführung von Teambuilding- und Schulungsmaßnahmen im Hinblick auf agile Prozesssteuerungen.</p>
             </div>
-        </div>
-
-        <!-- Discrete Boss Screen Hint Pill -->
-        <div class="gdoc-stealth-hint">
-            <button id="btn-boss-return" style="background:#1a73e8; color:#fff; border:none; padding:4px 8px; border-radius:12px; cursor:pointer; font-size:11px; margin-right:4px;">↩ Zurück zum Spiel</button>
-            <span>Tarnmodus aktiv</span>
-            <kbd>B</kbd><span>Spiel fortsetzen</span>
-            <kbd>N</kbd><span>Notfall: Tab sofort schliessen</span>
         </div>
     </div>
 
     <!-- Toast Notification -->
     <div id="portal-toast" class="toast-msg"></div>
 
-    <!-- Scripts: Audio Engine, Games, Master Portal -->
+    <!-- Scripts -->
     <script src="js/audio.js"></script>
     <script src="js/games/minecraft.js"></script>
     <script src="js/games/rushhour.js"></script>

@@ -1,7 +1,7 @@
 /**
  * Neon Snake 3D - Cyber Arena
- * Built with Three.js. Features 3D snake movement across glowing cyber grids,
- * dynamic camera, energy apples, obstacles, speed boosts and multiple level designs.
+ * Built with Three.js. Levels 1 - 100+ with 3D grid arena,
+ * scaling speed, procedural obstacle blocks, and energy apples.
  */
 
 window.Snake3DGame = class {
@@ -21,10 +21,9 @@ window.Snake3DGame = class {
         this.obstacles = [];
 
         this.score = 0;
-        this.speed = 0.12; // seconds per move
+        this.speed = 0.12;
         this.moveTimer = 0;
         this.currentLevel = 1;
-        this.difficulty = 'Normal';
         this.clock = null;
 
         this.snakeMeshes = [];
@@ -38,9 +37,9 @@ window.Snake3DGame = class {
 
         if (typeof THREE === 'undefined') {
             this.container.innerHTML = `
-                <div style="color:#fff; text-align:center; padding:50px; font-family:sans-serif;">
-                    <h2>Three.js 3D Engine wird geladen...</h2>
-                    <p style="color:#94a3b8; margin-top:10px;">Bitte überprüfe deine Internetverbindung für Three.js CDN.</p>
+                <div style="color:var(--text-secondary); text-align:center; padding:40px; font-family:sans-serif;">
+                    <h3>Three.js 3D Engine wird geladen...</h3>
+                    <p style="margin-top:8px; font-size:13px;">Bitte stelle sicher, dass eine Internetverbindung für CDN besteht.</p>
                 </div>
             `;
             return;
@@ -53,8 +52,8 @@ window.Snake3DGame = class {
         const hud = document.createElement('div');
         hud.className = 'rush-hud';
         hud.innerHTML = `
-            <div class="rush-stat">Score: <span class="rush-stat-val" style="color:#10b981;" id="snk-score">0</span></div>
-            <div class="rush-stat">Length: <span class="rush-stat-val" style="color:#38bdf8;" id="snk-len">3</span></div>
+            <div class="rush-stat">Punkte: <span class="rush-stat-val" style="color:#10b981;" id="snk-score">0</span></div>
+            <div class="rush-stat">Länge: <span class="rush-stat-val" style="color:#38bdf8;" id="snk-len">3</span></div>
             <div class="rush-stat">Arena: <span class="rush-stat-val" id="snk-lvl">1</span></div>
         `;
         this.container.appendChild(hud);
@@ -63,91 +62,97 @@ window.Snake3DGame = class {
         win.className = 'game-win-overlay';
         win.id = 'snk-win-screen';
         win.innerHTML = `
-            <div class="win-title">ARENA MASTER! 🐍</div>
-            <div class="win-subtitle" id="snk-win-sub">High Score Reached!</div>
-            <div style="display:flex; gap:12px;">
-                <button class="btn-game-action" id="btn-snk-replay">Replay</button>
-                <button class="btn-game-action" style="background:#10b981; border-color:#10b981;" id="btn-snk-next">Next Arena ➔</button>
+            <div class="win-title">ARENA GEMEISTERT!</div>
+            <div class="win-subtitle" id="snk-win-sub">Punkteziel erreicht.</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-game-action" id="btn-snk-replay">Wiederholen</button>
+                <button class="btn-game-action" style="background:#2563eb; color:#fff;" id="btn-snk-next">Nächste Arena ➔</button>
             </div>
         `;
         this.container.appendChild(win);
 
-        // Three.js setup
-        const width = this.container.clientWidth || window.innerWidth;
-        const height = this.container.clientHeight || window.innerHeight;
+        const w = Math.max(300, this.container.clientWidth || window.innerWidth);
+        const h = Math.max(300, this.container.clientHeight || (window.innerHeight - 48));
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x0a0f1d);
+        this.scene.background = new THREE.Color(0x09090b);
 
-        this.camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 1000);
         this.camera.position.set(0, 24, 18);
         this.camera.lookAt(0, 0, 0);
 
         this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-        this.renderer.setSize(width, height);
+        this.renderer.setSize(w, h);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         this.clock = new THREE.Clock();
 
-        // Lighting
-        const amb = new THREE.AmbientLight(0xffffff, 0.6);
+        const amb = new THREE.AmbientLight(0xffffff, 0.65);
         this.scene.add(amb);
 
-        const light = new THREE.DirectionalLight(0x38bdf8, 0.8);
+        const light = new THREE.DirectionalLight(0x38bdf8, 0.85);
         light.position.set(10, 20, 10);
         this.scene.add(light);
 
-        // Grid floor
-        const gridHelper = new THREE.GridHelper(this.gridSize * 1.5, this.gridSize, 0x3b82f6, 0x1e293b);
+        const gridHelper = new THREE.GridHelper(this.gridSize * 1.5, this.gridSize, 0x3f3f46, 0x18181b);
         gridHelper.position.y = -0.5;
         this.scene.add(gridHelper);
 
         this.bindEvents();
 
         const lvl = options.levelIndex || 1;
-        this.startLevel(lvl, options.difficulty || 'Normal');
+        this.startLevel(lvl);
+
+        requestAnimationFrame(() => this.resize());
 
         this.animate = this.animate.bind(this);
         this.animId = requestAnimationFrame(this.animate);
     }
 
-    startLevel(levelIndex = 1, difficulty = 'Normal') {
+    resize() {
+        if (!this.renderer || !this.container) return;
+        const w = Math.max(300, this.container.clientWidth || window.innerWidth);
+        const h = Math.max(300, this.container.clientHeight || (window.innerHeight - 48));
+        this.camera.aspect = w / h;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(w, h);
+    }
+
+    startLevel(levelIndex = 1) {
         this.currentLevel = levelIndex;
-        this.difficulty = difficulty;
         this.score = 0;
         this.dir = { x: 1, z: 0 };
         this.nextDir = { x: 1, z: 0 };
+        this.speed = Math.max(0.06, 0.13 - Math.min(0.06, levelIndex * 0.002));
 
         const winScreen = this.container.querySelector('#snk-win-screen');
         if (winScreen) winScreen.classList.remove('active');
 
-        // Reset snake
         this.snake = [
             { x: 0, z: 0 },
             { x: -1, z: 0 },
             { x: -2, z: 0 }
         ];
 
-        // Clear existing meshes
         this.snakeMeshes.forEach(m => this.scene.remove(m));
         this.snakeMeshes = [];
 
         this.obstacleMeshes.forEach(m => this.scene.remove(m));
         this.obstacleMeshes = [];
 
-        // Build obstacles based on level
+        // Procedural obstacles based on level
         this.obstacles = [];
-        if (levelIndex === 2) {
-            // Pillars
-            this.obstacles.push({ x: 4, z: 4 }, { x: -4, z: 4 }, { x: 4, z: -4 }, { x: -4, z: -4 });
-        } else if (levelIndex >= 3) {
-            // Walls
-            for (let i = -4; i <= 4; i++) {
-                if (i !== 0) this.obstacles.push({ x: i, z: 5 }, { x: i, z: -5 });
+        const numObs = Math.min(16, 2 + Math.floor(levelIndex / 3));
+        const seed = levelIndex * 41.27;
+
+        for (let i = 0; i < numObs; i++) {
+            const ox = Math.floor(Math.sin(i * 2 + seed) * 6);
+            const oz = Math.floor(Math.cos(i * 2 + seed) * 6);
+            if (Math.abs(ox) > 2 || Math.abs(oz) > 2) {
+                this.obstacles.push({ x: ox, z: oz });
             }
         }
 
-        // Create obstacle meshes
         const obsGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
         const obsMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
         this.obstacles.forEach(o => {
@@ -157,15 +162,13 @@ window.Snake3DGame = class {
             this.obstacleMeshes.push(mesh);
         });
 
-        // Create Apple
         if (!this.appleMesh) {
             const appleGeo = new THREE.SphereGeometry(0.7, 16, 16);
-            const appleMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669 });
+            const appleMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.2 });
             this.appleMesh = new THREE.Mesh(appleGeo, appleMat);
             this.scene.add(this.appleMesh);
         }
         this.spawnApple();
-
         this.updateHUD();
     }
 
@@ -189,6 +192,7 @@ window.Snake3DGame = class {
     }
 
     bindEvents() {
+        window.addEventListener('resize', () => this.resize());
         window.addEventListener('keydown', (e) => {
             if (e.code === 'KeyW' || e.code === 'ArrowUp') {
                 if (this.dir.z === 0) this.nextDir = { x: 0, z: -1 };
@@ -201,30 +205,29 @@ window.Snake3DGame = class {
             }
         });
 
-        this.container.querySelector('#btn-snk-replay').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
-        this.container.querySelector('#btn-snk-next').onclick = () => this.startLevel(this.currentLevel + 1, this.difficulty);
+        this.container.querySelector('#btn-snk-replay').onclick = () => this.startLevel(this.currentLevel);
+        this.container.querySelector('#btn-snk-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('snake3d', this.currentLevel + 1);
+            else this.startLevel(this.currentLevel + 1);
+        };
     }
 
     updateSnake() {
         this.dir = { ...this.nextDir };
         const head = this.snake[0];
         const newHead = { x: head.x + this.dir.x, z: head.z + this.dir.z };
-
         const half = Math.floor(this.gridSize / 2);
 
-        // Boundary collision
         if (Math.abs(newHead.x) > half || Math.abs(newHead.z) > half) {
             this.onGameOver();
             return;
         }
 
-        // Obstacle collision
         if (this.obstacles.some(o => o.x === newHead.x && o.z === newHead.z)) {
             this.onGameOver();
             return;
         }
 
-        // Self collision
         if (this.snake.some(s => s.x === newHead.x && s.z === newHead.z)) {
             this.onGameOver();
             return;
@@ -232,14 +235,14 @@ window.Snake3DGame = class {
 
         this.snake.unshift(newHead);
 
-        // Check Apple
         if (newHead.x === this.apple.x && newHead.z === this.apple.z) {
             this.score += 50;
             this.updateHUD();
             if (window.AudioManager) window.AudioManager.playPowerup();
             this.spawnApple();
 
-            if (this.score >= 500) {
+            const targetScore = 200 + Math.min(300, this.currentLevel * 25);
+            if (this.score >= targetScore) {
                 this.triggerWin();
             }
         } else {
@@ -254,8 +257,8 @@ window.Snake3DGame = class {
             const isHead = this.snakeMeshes.length === 0;
             const geo = new THREE.BoxGeometry(1.3, 1.3, 1.3);
             const mat = new THREE.MeshStandardMaterial({
-                color: isHead ? 0x60a5fa : 0x3b82f6,
-                roughness: 0.2
+                color: isHead ? 0x2563eb : 0x3b82f6,
+                roughness: 0.3
             });
             const mesh = new THREE.Mesh(geo, mat);
             this.scene.add(mesh);
@@ -269,8 +272,8 @@ window.Snake3DGame = class {
 
     onGameOver() {
         if (window.AudioManager) window.AudioManager.playExplosion();
-        alert('Crashed! Restarting arena.');
-        this.startLevel(this.currentLevel, this.difficulty);
+        alert('Kollision! Arena wird neu gestartet.');
+        this.startLevel(this.currentLevel);
     }
 
     triggerWin() {
@@ -301,10 +304,7 @@ window.Snake3DGame = class {
             this.moveTimer = 0;
         }
 
-        if (this.appleMesh) {
-            this.appleMesh.rotation.y += delta * 2;
-        }
-
+        if (this.appleMesh) this.appleMesh.rotation.y += delta * 2;
         this.renderer.render(this.scene, this.camera);
     }
 

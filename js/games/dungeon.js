@@ -1,7 +1,7 @@
 /**
  * Shadow Labyrinth - Roguelike Dungeon Crawler
- * Built with Canvas 2D. Features procedural dungeon generation, dynamic fog-of-war lighting,
- * melee sword swings, fireball spells, enemy AI, loot chests, and staircase floor progression.
+ * Levels 1 - 100+ with procedural rooms, dynamic Fog-of-War,
+ * melee sword swings, fireball spells, monster AI and stair descent.
  */
 
 window.DungeonGame = class {
@@ -12,9 +12,9 @@ window.DungeonGame = class {
         this.animId = null;
         this.isPaused = false;
 
-        this.tileSize = 32;
-        this.mapW = 32;
-        this.mapH = 24;
+        this.tileSize = 28;
+        this.mapW = 28;
+        this.mapH = 22;
         this.grid = [];
         this.revealed = [];
 
@@ -23,7 +23,6 @@ window.DungeonGame = class {
             hp: 100, maxHp: 100,
             mana: 60, maxMana: 60,
             gold: 0,
-            hasKey: false,
             dir: { x: 0, y: 1 }
         };
 
@@ -33,7 +32,6 @@ window.DungeonGame = class {
         this.projectiles = [];
 
         this.floor = 1;
-        this.difficulty = 'Normal';
         this.keys = {};
         this.moveCooldown = 0;
     }
@@ -53,7 +51,7 @@ window.DungeonGame = class {
             <div class="rush-stat">HP: <span class="rush-stat-val" style="color:#ef4444;" id="dg-hp">100/100</span></div>
             <div class="rush-stat">Mana: <span class="rush-stat-val" style="color:#38bdf8;" id="dg-mana">60</span></div>
             <div class="rush-stat">Gold: <span class="rush-stat-val" style="color:#fbbf24;" id="dg-gold">0</span></div>
-            <div class="rush-stat">Floor: <span class="rush-stat-val" id="dg-floor">1</span></div>
+            <div class="rush-stat">Ebene: <span class="rush-stat-val" id="dg-floor">1</span></div>
         `;
         this.container.appendChild(hud);
 
@@ -61,11 +59,11 @@ window.DungeonGame = class {
         win.className = 'game-win-overlay';
         win.id = 'dg-win-screen';
         win.innerHTML = `
-            <div class="win-title">DUNGEON CONQUERED! ⚔️</div>
-            <div class="win-subtitle" id="dg-win-sub">Floor Cleared! Descend into the deep...</div>
-            <div style="display:flex; gap:12px;">
-                <button class="btn-game-action" id="btn-dg-replay">Replay Floor</button>
-                <button class="btn-game-action" style="background:#10b981; border-color:#10b981;" id="btn-dg-next">Next Floor ➔</button>
+            <div class="win-title">EBENE BEZWUNGEN!</div>
+            <div class="win-subtitle" id="dg-win-sub">Treppe in die Tiefe freigelegt.</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-game-action" id="btn-dg-replay">Wiederholen</button>
+                <button class="btn-game-action" style="background:#2563eb; color:#fff;" id="btn-dg-next">Nächste Ebene ➔</button>
             </div>
         `;
         this.container.appendChild(win);
@@ -74,22 +72,28 @@ window.DungeonGame = class {
         this.resize();
 
         const lvl = options.levelIndex || 1;
-        this.startLevel(lvl, options.difficulty || 'Normal');
+        this.startLevel(lvl);
+
+        requestAnimationFrame(() => this.resize());
 
         this.loop = this.loop.bind(this);
         this.animId = requestAnimationFrame(this.loop);
     }
 
     resize() {
+        if (!this.container || !this.canvas) return;
         const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        const w = rect.width > 50 ? rect.width : (window.innerWidth || 800);
+        const h = rect.height > 50 ? rect.height : (window.innerHeight - 48 || 600);
+
+        this.canvas.width = w;
+        this.canvas.height = h;
+
+        this.tileSize = Math.max(18, Math.min(32, Math.floor((h - 80) / this.mapH)));
     }
 
-    startLevel(levelIndex = 1, difficulty = 'Normal') {
+    startLevel(levelIndex = 1) {
         this.floor = levelIndex;
-        this.difficulty = difficulty;
-        this.player.hasKey = false;
         this.enemies = [];
         this.items = [];
         this.projectiles = [];
@@ -102,16 +106,15 @@ window.DungeonGame = class {
     }
 
     generateDungeon() {
-        this.grid = Array(this.mapH).fill(null).map(() => Array(this.mapW).fill(1)); // 1 = wall, 0 = floor
+        this.grid = Array(this.mapH).fill(null).map(() => Array(this.mapW).fill(1));
         this.revealed = Array(this.mapH).fill(null).map(() => Array(this.mapW).fill(false));
 
-        // Dig out rooms
         const rooms = [];
-        const numRooms = 7 + this.floor;
+        const numRooms = 5 + Math.min(10, Math.floor(this.floor / 3));
 
         for (let i = 0; i < numRooms; i++) {
-            const rw = 4 + Math.floor(Math.random() * 5);
-            const rh = 4 + Math.floor(Math.random() * 5);
+            const rw = 4 + Math.floor(Math.random() * 4);
+            const rh = 4 + Math.floor(Math.random() * 4);
             const rx = 1 + Math.floor(Math.random() * (this.mapW - rw - 2));
             const ry = 1 + Math.floor(Math.random() * (this.mapH - rh - 2));
 
@@ -123,13 +126,10 @@ window.DungeonGame = class {
             rooms.push({ x: rx + Math.floor(rw / 2), y: ry + Math.floor(rh / 2) });
         }
 
-        // Connect rooms with corridors
         for (let i = 0; i < rooms.length - 1; i++) {
             const r1 = rooms[i];
             const r2 = rooms[i + 1];
-
-            let cx = r1.x;
-            let cy = r1.y;
+            let cx = r1.x, cy = r1.y;
 
             while (cx !== r2.x) {
                 this.grid[cy][cx] = 0;
@@ -141,26 +141,23 @@ window.DungeonGame = class {
             }
         }
 
-        // Place player in first room
         this.player.x = rooms[0].x;
         this.player.y = rooms[0].y;
 
-        // Place exit stairs in last room
-        const lastRoom = rooms[rooms.length - 1];
-        this.stairs = { x: lastRoom.x, y: lastRoom.y };
+        const last = rooms[rooms.length - 1];
+        this.stairs = { x: last.x, y: last.y };
 
-        // Place enemies & loot in other rooms
+        const enemyCount = 3 + Math.min(15, Math.floor(this.floor / 2));
         for (let i = 1; i < rooms.length; i++) {
             const r = rooms[i];
             this.enemies.push({
                 x: r.x, y: r.y,
-                hp: 30 + this.floor * 15,
-                maxHp: 30 + this.floor * 15,
+                hp: 25 + this.floor * 12,
                 color: '#ef4444'
             });
 
             if (Math.random() < 0.6) {
-                this.items.push({ x: r.x + 1, y: r.y, type: 'gold', val: 25 });
+                this.items.push({ x: r.x + 1, y: r.y, type: 'gold', val: 20 + this.floor * 5 });
             }
         }
 
@@ -183,32 +180,28 @@ window.DungeonGame = class {
     }
 
     bindEvents() {
+        window.addEventListener('resize', () => this.resize());
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
-
-            // Melee sword swing
-            if (e.code === 'Space') {
-                this.attackMelee();
-            }
-            // Fireball spell
-            if (e.code === 'KeyF' || e.code === 'KeyJ') {
-                this.castFireball();
-            }
+            if (e.code === 'Space') this.attackMelee();
+            if (e.code === 'KeyF') this.castFireball();
         });
-
         window.addEventListener('keyup', (e) => this.keys[e.code] = false);
 
-        this.container.querySelector('#btn-dg-replay').onclick = () => this.startLevel(this.floor, this.difficulty);
-        this.container.querySelector('#btn-dg-next').onclick = () => this.startLevel(this.floor + 1, this.difficulty);
+        this.container.querySelector('#btn-dg-replay').onclick = () => this.startLevel(this.floor);
+        this.container.querySelector('#btn-dg-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('dungeon', this.floor + 1);
+            else this.startLevel(this.floor + 1);
+        };
     }
 
     attackMelee() {
-        const targetX = this.player.x + this.player.dir.x;
-        const targetY = this.player.y + this.player.dir.y;
+        const tx = this.player.x + this.player.dir.x;
+        const ty = this.player.y + this.player.dir.y;
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const en = this.enemies[i];
-            if (en.x === targetX && en.y === targetY) {
+            if (en.x === tx && en.y === ty) {
                 en.hp -= 25;
                 if (window.AudioManager) window.AudioManager.playHit();
                 if (en.hp <= 0) {
@@ -248,8 +241,7 @@ window.DungeonGame = class {
     update() {
         this.moveCooldown -= 0.05;
         if (this.moveCooldown <= 0) {
-            let dx = 0;
-            let dy = 0;
+            let dx = 0, dy = 0;
             if (this.keys['KeyW'] || this.keys['ArrowUp']) dy -= 1;
             else if (this.keys['KeyS'] || this.keys['ArrowDown']) dy += 1;
             else if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx -= 1;
@@ -261,7 +253,6 @@ window.DungeonGame = class {
                 const ny = this.player.y + dy;
 
                 if (this.grid[ny] && this.grid[ny][nx] === 0) {
-                    // Check if monster blocking
                     const monster = this.enemies.find(m => m.x === nx && m.y === ny);
                     if (!monster) {
                         this.player.x = nx;
@@ -269,7 +260,6 @@ window.DungeonGame = class {
                         this.updateFogOfWar();
                         this.checkPickups();
 
-                        // Stairs check
                         if (this.player.x === this.stairs.x && this.player.y === this.stairs.y) {
                             this.triggerWin();
                         }
@@ -279,14 +269,12 @@ window.DungeonGame = class {
             }
         }
 
-        // Update Projectiles
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const p = this.projectiles[i];
             p.x += p.dx;
             p.y += p.dy;
             p.range--;
 
-            // Hit enemy
             for (let eIdx = this.enemies.length - 1; eIdx >= 0; eIdx--) {
                 const en = this.enemies[eIdx];
                 if (en.x === p.x && en.y === p.y) {
@@ -341,60 +329,59 @@ window.DungeonGame = class {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const offsetX = Math.floor((this.canvas.width - this.mapW * this.tileSize) / 2);
-        const offsetY = Math.floor((this.canvas.height - this.mapH * this.tileSize) / 2);
+        const ox = Math.floor((this.canvas.width - this.mapW * this.tileSize) / 2);
+        const oy = Math.floor((this.canvas.height - this.mapH * this.tileSize) / 2);
 
-        // Draw Dungeon tiles
         for (let y = 0; y < this.mapH; y++) {
             for (let x = 0; x < this.mapW; x++) {
                 if (!this.revealed[y][x]) continue;
 
                 const isWall = this.grid[y][x] === 1;
-                ctx.fillStyle = isWall ? '#1e293b' : '#334155';
-                ctx.fillRect(offsetX + x * this.tileSize, offsetY + y * this.tileSize, this.tileSize, this.tileSize);
-                ctx.strokeStyle = '#0f172a';
-                ctx.strokeRect(offsetX + x * this.tileSize, offsetY + y * this.tileSize, this.tileSize, this.tileSize);
+                ctx.fillStyle = isWall ? '#18181b' : '#27272a';
+                ctx.fillRect(ox + x * this.tileSize, oy + y * this.tileSize, this.tileSize, this.tileSize);
+                ctx.strokeStyle = '#09090b';
+                ctx.strokeRect(ox + x * this.tileSize, oy + y * this.tileSize, this.tileSize, this.tileSize);
             }
         }
 
-        // Draw Stairs
+        // Stairs
         if (this.revealed[this.stairs.y] && this.revealed[this.stairs.y][this.stairs.x]) {
             ctx.fillStyle = '#10b981';
-            ctx.fillRect(offsetX + this.stairs.x * this.tileSize + 4, offsetY + this.stairs.y * this.tileSize + 4, 24, 24);
+            ctx.fillRect(ox + this.stairs.x * this.tileSize + 4, oy + this.stairs.y * this.tileSize + 4, this.tileSize - 8, this.tileSize - 8);
         }
 
-        // Draw Items
+        // Items
         for (const it of this.items) {
             if (this.revealed[it.y] && this.revealed[it.y][it.x]) {
                 ctx.fillStyle = '#fbbf24';
                 ctx.beginPath();
-                ctx.arc(offsetX + it.x * this.tileSize + 16, offsetY + it.y * this.tileSize + 16, 6, 0, Math.PI * 2);
+                ctx.arc(ox + it.x * this.tileSize + this.tileSize / 2, oy + it.y * this.tileSize + this.tileSize / 2, 5, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
 
-        // Draw Enemies
+        // Enemies
         for (const en of this.enemies) {
             if (this.revealed[en.y] && this.revealed[en.y][en.x]) {
                 ctx.fillStyle = en.color;
                 ctx.beginPath();
-                ctx.arc(offsetX + en.x * this.tileSize + 16, offsetY + en.y * this.tileSize + 16, 11, 0, Math.PI * 2);
+                ctx.arc(ox + en.x * this.tileSize + this.tileSize / 2, oy + en.y * this.tileSize + this.tileSize / 2, 9, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
 
-        // Draw Projectiles
+        // Projectiles
         ctx.fillStyle = '#f97316';
         for (const p of this.projectiles) {
             ctx.beginPath();
-            ctx.arc(offsetX + p.x * this.tileSize + 16, offsetY + p.y * this.tileSize + 16, 6, 0, Math.PI * 2);
+            ctx.arc(ox + p.x * this.tileSize + this.tileSize / 2, oy + p.y * this.tileSize + this.tileSize / 2, 5, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Draw Player
-        ctx.fillStyle = '#3b82f6';
+        // Player
+        ctx.fillStyle = '#f4f4f5';
         ctx.beginPath();
-        ctx.arc(offsetX + this.player.x * this.tileSize + 16, offsetY + this.player.y * this.tileSize + 16, 12, 0, Math.PI * 2);
+        ctx.arc(ox + this.player.x * this.tileSize + this.tileSize / 2, oy + this.player.y * this.tileSize + this.tileSize / 2, 10, 0, Math.PI * 2);
         ctx.fill();
     }
 
@@ -405,4 +392,3 @@ window.DungeonGame = class {
         if (this.container) this.container.innerHTML = '';
     }
 };
-

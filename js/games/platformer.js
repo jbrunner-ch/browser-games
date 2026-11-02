@@ -1,7 +1,7 @@
 /**
  * Gravity Runner - 2D Precision Platformer
- * Super responsive physics: Double-jump, wall-slide, wall-jump, dash, and gravity flip pads.
- * Features 10 procedural & curated challenge levels, collectibles and death counters.
+ * Levels 1 - 100+ with procedural gauntlet generation, double-jump,
+ * wall-slide, wall-jump, dash, collectibles and scaling obstacle density.
  */
 
 window.PlatformerGame = class {
@@ -15,9 +15,9 @@ window.PlatformerGame = class {
         this.player = {
             x: 50, y: 300,
             vx: 0, vy: 0,
-            w: 22, h: 28,
+            w: 20, h: 26,
             speed: 5.5,
-            jumpForce: 11.5,
+            jumpForce: 11.2,
             gravity: 28.0,
             isGrounded: false,
             canDoubleJump: true,
@@ -25,21 +25,18 @@ window.PlatformerGame = class {
             wallDir: 0,
             canDash: true,
             isDashing: false,
-            dashTimer: 0,
-            gravityDir: 1 // 1 = down, -1 = up
+            dashTimer: 0
         };
 
         this.platforms = [];
         this.spikes = [];
         this.gems = [];
-        this.goal = { x: 700, y: 100, w: 30, h: 40 };
+        this.goal = { x: 700, y: 100, w: 28, h: 42 };
 
         this.deaths = 0;
         this.gemsCollected = 0;
         this.totalGems = 0;
         this.currentLevel = 1;
-        this.difficulty = 'Normal';
-
         this.keys = {};
         this.ghosts = [];
     }
@@ -58,7 +55,7 @@ window.PlatformerGame = class {
         hud.innerHTML = `
             <div class="rush-stat">Level: <span class="rush-stat-val" id="plat-lvl">1</span></div>
             <div class="rush-stat">Gems: <span class="rush-stat-val" style="color:#38bdf8;" id="plat-gems">0/3</span></div>
-            <div class="rush-stat">Deaths: <span class="rush-stat-val" style="color:#ef4444;" id="plat-deaths">0</span></div>
+            <div class="rush-stat">Tode: <span class="rush-stat-val" style="color:#ef4444;" id="plat-deaths">0</span></div>
         `;
         this.container.appendChild(hud);
 
@@ -66,11 +63,11 @@ window.PlatformerGame = class {
         win.className = 'game-win-overlay';
         win.id = 'plat-win-screen';
         win.innerHTML = `
-            <div class="win-title">LEVEL COMPLETE! ⚡</div>
-            <div class="win-subtitle" id="plat-win-sub">Challenge Conquered!</div>
-            <div style="display:flex; gap:12px;">
-                <button class="btn-game-action" id="btn-plat-replay">Replay</button>
-                <button class="btn-game-action" style="background:#10b981; border-color:#10b981;" id="btn-plat-next">Next Level ➔</button>
+            <div class="win-title">LEVEL GESCHAFFT!</div>
+            <div class="win-subtitle" id="plat-win-sub">Alle Kristalle gesichert.</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-game-action" id="btn-plat-replay">Wiederholen</button>
+                <button class="btn-game-action" style="background:#2563eb; color:#fff;" id="btn-plat-next">Nächstes Level ➔</button>
             </div>
         `;
         this.container.appendChild(win);
@@ -79,7 +76,9 @@ window.PlatformerGame = class {
         this.resize();
 
         const lvl = options.levelIndex || 1;
-        this.startLevel(lvl, options.difficulty || 'Normal');
+        this.startLevel(lvl);
+
+        requestAnimationFrame(() => this.resize());
 
         this.lastTime = performance.now();
         this.loop = this.loop.bind(this);
@@ -87,16 +86,18 @@ window.PlatformerGame = class {
     }
 
     resize() {
+        if (!this.container || !this.canvas) return;
         const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        const w = rect.width > 50 ? rect.width : (window.innerWidth || 800);
+        const h = rect.height > 50 ? rect.height : (window.innerHeight - 48 || 600);
+
+        this.canvas.width = w;
+        this.canvas.height = h;
     }
 
-    startLevel(levelIndex = 1, difficulty = 'Normal') {
+    startLevel(levelIndex = 1) {
         this.currentLevel = levelIndex;
-        this.difficulty = difficulty;
         this.gemsCollected = 0;
-        this.player.gravityDir = 1;
 
         const winScreen = this.container.querySelector('#plat-win-screen');
         if (winScreen) winScreen.classList.remove('active');
@@ -106,7 +107,7 @@ window.PlatformerGame = class {
         this.updateHUD();
     }
 
-    buildLevel(levelIndex) {
+    buildLevel(level) {
         this.platforms = [];
         this.spikes = [];
         this.gems = [];
@@ -114,107 +115,113 @@ window.PlatformerGame = class {
         const w = this.canvas.width || 800;
         const h = this.canvas.height || 600;
 
-        // Ground and boundary borders
-        this.platforms.push({ x: 0, y: h - 30, w: w, h: 40 });
-        this.platforms.push({ x: 0, y: 0, w: w, h: 20 });
-        this.platforms.push({ x: 0, y: 0, w: 20, h: h });
-        this.platforms.push({ x: w - 20, y: 0, w: 20, h: h });
+        // Boundaries
+        this.platforms.push({ x: 0, y: h - 30, w: w, h: 30 }); // Floor
+        this.platforms.push({ x: 0, y: 0, w: w, h: 20 });       // Ceiling
+        this.platforms.push({ x: 0, y: 0, w: 20, h: h });       // Left wall
+        this.platforms.push({ x: w - 20, y: 0, w: 20, h: h }); // Right wall
 
-        // Procedural & Level architecture
-        if (levelIndex === 1) {
-            // Intro platforms
-            this.platforms.push({ x: 120, y: h - 110, w: 140, h: 18 });
-            this.platforms.push({ x: 320, y: h - 180, w: 140, h: 18 });
-            this.platforms.push({ x: 520, y: h - 260, w: 140, h: 18 });
-            this.platforms.push({ x: 300, y: h - 350, w: 160, h: 18 });
+        // Procedural challenge generation scaling with level
+        const numPlatforms = 4 + Math.min(10, Math.floor(level / 5));
+        const spacing = (w - 180) / numPlatforms;
+        const seed = level * 71.39 + 17;
 
-            this.spikes.push({ x: 260, y: h - 30, w: 50, h: 16 });
-            this.spikes.push({ x: 470, y: h - 30, w: 50, h: 16 });
+        let lastY = h - 120;
+        for (let i = 0; i < numPlatforms; i++) {
+            const px = 100 + i * spacing;
+            // Height wobble
+            const targetY = h - 100 - Math.abs(Math.sin(i * 1.5 + seed)) * (h - 260);
+            const platW = Math.max(65, 120 - Math.min(50, level * 2));
+            const platH = 16;
 
-            this.gems.push({ x: 180, y: h - 140, collected: false });
-            this.gems.push({ x: 380, y: h - 210, collected: false });
-            this.gems.push({ x: 580, y: h - 290, collected: false });
+            this.platforms.push({ x: px, y: targetY, w: platW, h: platH });
 
-            this.goal = { x: 360, y: h - 400, w: 32, h: 48 };
-        } else if (levelIndex === 2) {
-            // Wall-jump shaft
-            this.platforms.push({ x: 140, y: h - 120, w: 100, h: 18 });
-            this.platforms.push({ x: 280, y: h - 240, w: 20, h: 200 }); // Wall 1
-            this.platforms.push({ x: 380, y: h - 360, w: 20, h: 240 }); // Wall 2
-            this.platforms.push({ x: 480, y: h - 200, w: 120, h: 18 });
-
-            this.spikes.push({ x: 160, y: h - 30, w: 120, h: 16 });
-            this.spikes.push({ x: 300, y: h - 30, w: 180, h: 16 });
-
-            this.gems.push({ x: 330, y: h - 220, collected: false });
-            this.gems.push({ x: 330, y: h - 320, collected: false });
-            this.gems.push({ x: 540, y: h - 230, collected: false });
-
-            this.goal = { x: 540, y: h - 260, w: 32, h: 48 };
-        } else {
-            // Hard Gauntlet
-            for (let i = 0; i < 6; i++) {
-                const px = 100 + i * 110;
-                const py = h - 90 - (i % 2 === 0 ? 60 : 120);
-                this.platforms.push({ x: px, y: py, w: 80, h: 16 });
-                if (i > 0 && i < 5) {
-                    this.spikes.push({ x: px + 20, y: py - 12, w: 40, h: 12 });
-                }
-                this.gems.push({ x: px + 40, y: py - 40, collected: false });
+            // Add spikes on floor or on platform
+            if (i > 0 && Math.sin(i * 3 + seed) > 0.1) {
+                const spW = Math.min(platW - 20, 30 + Math.min(25, level));
+                this.spikes.push({
+                    x: px + (platW - spW) / 2,
+                    y: targetY - 12,
+                    w: spW,
+                    h: 12
+                });
             }
-            this.goal = { x: w - 90, y: h - 200, w: 32, h: 48 };
+
+            // Gems
+            this.gems.push({
+                x: px + platW / 2,
+                y: targetY - 35,
+                collected: false
+            });
+
+            lastY = targetY;
         }
 
+        // Floor hazard spikes based on difficulty
+        const hazardCount = Math.min(8, 2 + Math.floor(level / 8));
+        for (let k = 0; k < hazardCount; k++) {
+            this.spikes.push({
+                x: 140 + k * (w / (hazardCount + 1)),
+                y: h - 42,
+                w: 40,
+                h: 14
+            });
+        }
+
+        this.goal = { x: w - 70, y: Math.max(70, lastY - 40), w: 28, h: 42 };
         this.totalGems = this.gems.length;
     }
 
     respawnPlayer() {
         const h = this.canvas.height || 600;
         this.player.x = 40;
-        this.player.y = h - 90;
+        this.player.y = h - 80;
         this.player.vx = 0;
         this.player.vy = 0;
         this.player.isGrounded = false;
         this.player.canDoubleJump = true;
         this.player.canDash = true;
-        this.player.gravityDir = 1;
     }
 
     bindEvents() {
+        window.addEventListener('resize', () => {
+            this.resize();
+            this.buildLevel(this.currentLevel);
+        });
+
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
-
             if (e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp') {
                 this.jump();
             }
-            if (e.code === 'KeyJ' || e.code === 'KeyK' || e.code === 'ShiftLeft' || e.code === 'KeyX') {
+            if (e.code === 'KeyJ' || e.code === 'ShiftLeft' || e.code === 'KeyX') {
                 this.dash();
             }
         });
 
-        window.addEventListener('keyup', (e) => {
-            this.keys[e.code] = false;
-        });
+        window.addEventListener('keyup', (e) => this.keys[e.code] = false);
 
-        this.container.querySelector('#btn-plat-replay').onclick = () => this.startLevel(this.currentLevel, this.difficulty);
-        this.container.querySelector('#btn-plat-next').onclick = () => this.startLevel(this.currentLevel + 1, this.difficulty);
+        this.container.querySelector('#btn-plat-replay').onclick = () => this.startLevel(this.currentLevel);
+        this.container.querySelector('#btn-plat-next').onclick = () => {
+            if (window.portal) window.portal.launchGame('platformer', this.currentLevel + 1);
+            else this.startLevel(this.currentLevel + 1);
+        };
     }
 
     jump() {
         const p = this.player;
         if (p.isGrounded) {
-            p.vy = -p.jumpForce * p.gravityDir;
+            p.vy = -p.jumpForce;
             p.isGrounded = false;
             p.canDoubleJump = true;
             if (window.AudioManager) window.AudioManager.playJump();
         } else if (p.isWallSliding) {
-            // Wall jump
-            p.vy = -p.jumpForce * 0.9 * p.gravityDir;
+            p.vy = -p.jumpForce * 0.95;
             p.vx = -p.wallDir * p.speed * 1.3;
             p.isWallSliding = false;
             if (window.AudioManager) window.AudioManager.playJump();
         } else if (p.canDoubleJump) {
-            p.vy = -p.jumpForce * 0.9 * p.gravityDir;
+            p.vy = -p.jumpForce * 0.9;
             p.canDoubleJump = false;
             if (window.AudioManager) window.AudioManager.playJump();
         }
@@ -255,40 +262,28 @@ window.PlatformerGame = class {
         if (p.isDashing) {
             p.dashTimer -= delta;
             p.x += p.vx * 60 * delta;
-
-            // Ghost particle
-            if (Math.random() < 0.6) {
-                this.ghosts.push({ x: p.x, y: p.y, w: p.w, h: p.h, alpha: 0.6 });
-            }
-
             if (p.dashTimer <= 0) {
                 p.isDashing = false;
                 p.vx *= 0.3;
             }
         } else {
-            // Horizontal move
             let moveDir = 0;
             if (this.keys['KeyA'] || this.keys['ArrowLeft']) moveDir -= 1;
             if (this.keys['KeyD'] || this.keys['ArrowRight']) moveDir += 1;
 
             p.vx = moveDir * p.speed;
+            p.vy += p.gravity * delta;
 
-            // Gravity
-            p.vy += p.gravity * p.gravityDir * delta;
-            if (p.isWallSliding && p.vy * p.gravityDir > 2) {
-                p.vy = 2 * p.gravityDir; // Friction
-            }
+            if (p.isWallSliding && p.vy > 2) p.vy = 2;
 
-            // Move X & Collide
             p.x += p.vx * 60 * delta;
-            this.checkPlatformCollisionX();
+            this.checkCollisionX();
 
-            // Move Y & Collide
             p.y += p.vy * 60 * delta;
-            this.checkPlatformCollisionY();
+            this.checkCollisionY();
         }
 
-        // Spikes check
+        // Spikes
         for (const sp of this.spikes) {
             if (this.rectIntersect(p, sp)) {
                 this.onDeath();
@@ -296,9 +291,9 @@ window.PlatformerGame = class {
             }
         }
 
-        // Gems check
+        // Gems
         for (const gem of this.gems) {
-            if (!gem.collected && Math.hypot((p.x + p.w / 2) - gem.x, (p.y + p.h / 2) - gem.y) < 20) {
+            if (!gem.collected && Math.hypot((p.x + p.w / 2) - gem.x, (p.y + p.h / 2) - gem.y) < 18) {
                 gem.collected = true;
                 this.gemsCollected++;
                 this.updateHUD();
@@ -306,19 +301,13 @@ window.PlatformerGame = class {
             }
         }
 
-        // Goal check
+        // Goal
         if (this.rectIntersect(p, this.goal)) {
             this.triggerWin();
         }
-
-        // Update ghosts
-        for (let i = this.ghosts.length - 1; i >= 0; i--) {
-            this.ghosts[i].alpha -= delta * 3;
-            if (this.ghosts[i].alpha <= 0) this.ghosts.splice(i, 1);
-        }
     }
 
-    checkPlatformCollisionX() {
+    checkCollisionX() {
         const p = this.player;
         p.isWallSliding = false;
 
@@ -338,20 +327,20 @@ window.PlatformerGame = class {
         }
     }
 
-    checkPlatformCollisionY() {
+    checkCollisionY() {
         const p = this.player;
         p.isGrounded = false;
 
         for (const plat of this.platforms) {
             if (this.rectIntersect(p, plat)) {
-                if (p.vy * p.gravityDir > 0) {
-                    p.y = p.gravityDir > 0 ? plat.y - p.h : plat.y + plat.h;
+                if (p.vy > 0) {
+                    p.y = plat.y - p.h;
                     p.isGrounded = true;
                     p.canDoubleJump = true;
                     p.canDash = true;
                     p.vy = 0;
                 } else {
-                    p.y = p.gravityDir > 0 ? plat.y + plat.h : plat.y - p.h;
+                    p.y = plat.y + plat.h;
                     p.vy = 0;
                 }
             }
@@ -392,22 +381,16 @@ window.PlatformerGame = class {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw Ghost Trail
-        for (const g of this.ghosts) {
-            ctx.fillStyle = `rgba(59, 130, 246, ${g.alpha * 0.5})`;
-            ctx.fillRect(g.x, g.y, g.w, g.h);
-        }
-
-        // Draw Platforms
-        ctx.fillStyle = '#334155';
-        ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 2;
+        // Platforms
+        ctx.fillStyle = '#27272a';
+        ctx.strokeStyle = '#3f3f46';
+        ctx.lineWidth = 1;
         for (const plat of this.platforms) {
             ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
             ctx.strokeRect(plat.x, plat.y, plat.w, plat.h);
         }
 
-        // Draw Spikes
+        // Spikes
         ctx.fillStyle = '#ef4444';
         for (const sp of this.spikes) {
             ctx.beginPath();
@@ -417,31 +400,24 @@ window.PlatformerGame = class {
             ctx.fill();
         }
 
-        // Draw Gems
+        // Gems
         for (const gem of this.gems) {
             if (!gem.collected) {
                 ctx.fillStyle = '#38bdf8';
                 ctx.beginPath();
-                ctx.arc(gem.x, gem.y, 8, 0, Math.PI * 2);
+                ctx.arc(gem.x, gem.y, 7, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#fff';
-                ctx.stroke();
             }
         }
 
-        // Draw Goal Portal
+        // Goal
         ctx.fillStyle = '#10b981';
         ctx.fillRect(this.goal.x, this.goal.y, this.goal.w, this.goal.h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillText('GOAL', this.goal.x + 2, this.goal.y + 24);
 
-        // Draw Player
+        // Player
         const p = this.player;
-        ctx.fillStyle = p.isDashing ? '#93c5fd' : '#3b82f6';
+        ctx.fillStyle = p.isDashing ? '#93c5fd' : '#2563eb';
         ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.strokeStyle = '#fff';
-        ctx.strokeRect(p.x, p.y, p.w, p.h);
     }
 
     pause() { this.isPaused = true; }
@@ -451,4 +427,3 @@ window.PlatformerGame = class {
         if (this.container) this.container.innerHTML = '';
     }
 };
-

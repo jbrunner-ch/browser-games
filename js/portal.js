@@ -1,7 +1,7 @@
 /**
  * Master Game Portal Manager
- * Manages game registry, switching between games, level selectors,
- * fullscreen toggling, and the Stealth 'Boss Key' (Google Docs Decoy + Tab Closer).
+ * Handles game registration, dynamic level selection (1 - 100+),
+ * reliable container resizing, clean theme, and secret stealth keys.
  */
 
 class GamePortal {
@@ -9,154 +9,106 @@ class GamePortal {
         this.currentGame = null;
         this.currentGameId = null;
         this.isBossActive = false;
-        this.currentDifficulty = 'Normal';
         this.currentLevel = 1;
+        this.levelPage = 1; // 1-10, 11-20, etc.
 
-        // Boss Key config (Uniform across portal)
-        this.bossKey = 'KeyB'; // 'B' key
-        this.panicCloseKey = 'KeyN'; // 'N' key
+        // Secret keys (hidden from UI)
+        this.bossKey = 'KeyB';
+        this.panicCloseKey = 'KeyN';
 
-        // Registry of 10 Games
+        // 10 Games Registry
         this.games = [
             {
                 id: 'minecraft',
                 title: 'VoxelCraft 3D',
                 category: '3d',
-                badge: '3D Voxel World',
-                featured: true,
-                desc: 'Minecraft-inspiriertes 3D Sandbox-Spiel mit prozeduraler Welt, Physik, Tag/Nacht-Zyklus, Hotbar und Block-Mining/Building.',
+                badge: '3D Voxel Engine',
+                desc: '3D Voxel Sandbox mit prozeduraler Terrain-Generierung, Beleuchtung, Block-Mining und Blockbau.',
                 class: 'VoxelCraftGame',
                 controls: [
-                    { keys: ['W', 'A', 'S', 'D'], desc: 'Bewegen' },
-                    { keys: ['Space'], desc: 'Springen' },
-                    { keys: ['Shift'], desc: 'Sneaken / Sprinten' },
-                    { keys: ['Mouse'], desc: 'Umsehen (Pointer Lock)' },
-                    { keys: ['L-Click'], desc: 'Block abbauen' },
-                    { keys: ['R-Click'], desc: 'Block platzieren' },
-                    { keys: ['1-9'], desc: 'Block auswählen' }
-                ],
-                levels: [
-                    { num: 1, name: 'Grüne Hügel (Plains)', diff: 'Normal' },
-                    { num: 2, name: 'Alpine Berge (Cliffs)', diff: 'Normal' },
-                    { num: 3, name: 'Wüsten-Oase (Desert)', diff: 'Hard' },
-                    { num: 4, name: 'Schwebende Inseln (Void)', diff: 'Hard' },
-                    { num: 5, name: 'Nether Caverns (Lava)', diff: 'Expert' }
+                    { keys: ['W, A, S, D'], desc: 'Bewegen' },
+                    { keys: ['Leertaste'], desc: 'Springen' },
+                    { keys: ['Maus'], desc: 'Kamera steuern' },
+                    { keys: ['L-Klick'], desc: 'Block abbauen' },
+                    { keys: ['R-Klick'], desc: 'Block platzieren' },
+                    { keys: ['1 - 9'], desc: 'Block auswählen' }
                 ]
             },
             {
                 id: 'rushhour',
                 title: 'Traffic Escape (Rush Hour)',
                 category: 'puzzle',
-                badge: '2D Top-Down',
-                featured: true,
-                desc: 'Befreie das rote Sportauto in einer 2D-Draufsicht aus dem verstopften Parkplatz durch horizontales und vertikales Verschieben.',
+                badge: '2D Puzzle',
+                desc: 'Befreie das rote Auto aus dem Parkplatz durch horizontales und vertikales Verschieben der Fahrzeuge.',
                 class: 'RushHourGame',
                 controls: [
-                    { keys: ['Mausklick / Drag'], desc: 'Fahrzeuge entlang ihrer Spur verschieben' },
-                    { keys: ['Undo'], desc: 'Letzten Zug rückgängig machen' },
-                    { keys: ['Reset'], desc: 'Parkplatz neu aufbauen' }
-                ],
-                levels: [
-                    { num: 1, name: 'Parkplatz A1 (Sehr Leicht)', diff: 'Easy' },
-                    { num: 2, name: 'Parkplatz B2 (Leicht)', diff: 'Easy' },
-                    { num: 3, name: 'Parkplatz C3 (Mittel)', diff: 'Normal' },
-                    { num: 4, name: 'Rush Hour D4 (Schwer)', diff: 'Hard' },
-                    { num: 5, name: 'Mega Grid E5 (Experte)', diff: 'Expert' },
-                    { num: 6, name: 'Prozedural Level 6', diff: 'Expert' },
-                    { num: 7, name: 'Prozedural Level 7', diff: 'Expert' }
+                    { keys: ['Mausklick + Ziehen'], desc: 'Fahrzeuge entlang der Spur verschieben' },
+                    { keys: ['Undo'], desc: 'Letzten Schritt zurücknehmen' },
+                    { keys: ['Reset'], desc: 'Level zurücksetzen' }
                 ]
             },
             {
                 id: 'racing3d',
                 title: 'Velocity Rush 3D',
                 category: '3d',
-                badge: '3D Rennspiel',
-                featured: true,
-                desc: 'Schnelles 3D-Rennspiel mit echter Fahrphysik, Drifting, Reifenspuren, dynamischen Rennstrecken, KI-Gegnern und Tacho-HUD.',
+                badge: '3D Racing',
+                desc: 'Rennspiel mit echter Fahrphysik, Drift-Dynamik, dynamischen Rennstrecken und KI-Gegnern.',
                 class: 'Racing3DGame',
                 controls: [
                     { keys: ['W / ↑'], desc: 'Gas geben' },
                     { keys: ['S / ↓'], desc: 'Bremse / Rückwärts' },
-                    { keys: ['A / D / ← / →'], desc: 'Lenken' },
-                    { keys: ['Space'], desc: 'Handbremse / Drift' }
-                ],
-                levels: [
-                    { num: 1, name: 'Sunburst Coastal Ring', diff: 'Easy' },
-                    { num: 2, name: 'Tokyo Neon Cyberway', diff: 'Normal' },
-                    { num: 3, name: 'Grand Canyon Pass', diff: 'Hard' },
-                    { num: 4, name: 'Alpine Snow Drift', diff: 'Hard' },
-                    { num: 5, name: 'Formula Championship', diff: 'Expert' }
+                    { keys: ['A, D / ←, →'], desc: 'Lenken' },
+                    { keys: ['Leertaste'], desc: 'Handbremse / Drift' }
                 ]
             },
             {
                 id: 'towerdefense',
-                title: 'Cyber Siege: Tower Defense',
+                title: 'Cyber Siege',
                 category: 'strategy',
-                badge: 'Strategie',
-                desc: 'Verteidige deine Energiebasis gegen Wellen von Cyber-Mechs. Baue Gatlings, Plasma-Kanonen, Cryo-Türme und Tesla-Spulen mit Upgrades.',
+                badge: 'Tower Defense',
+                desc: 'Strategische Verteidigung mit Gatling-, Plasma-, Cryo- und Tesla-Türmen gegen skalierende Mech-Wellen.',
                 class: 'TowerDefenseGame',
                 controls: [
                     { keys: ['Mausklick'], desc: 'Turm platzieren / Upgraden' },
-                    { keys: ['Shop'], desc: 'Turmart auswählen' },
-                    { keys: ['Start Wave'], desc: 'Nächste Angriffswelle rufen' }
-                ],
-                levels: [
-                    { num: 1, name: 'Sektor 1: Winding Pass', diff: 'Normal' },
-                    { num: 2, name: 'Sektor 2: Spiral Outpost', diff: 'Hard' },
-                    { num: 3, name: 'Sektor 3: Zig-Zag Core', diff: 'Expert' }
+                    { keys: ['Shop'], desc: 'Turmart wählen' },
+                    { keys: ['Start Wave'], desc: 'Welle starten' }
                 ]
             },
             {
                 id: 'platformer',
                 title: 'Gravity Runner',
                 category: 'action',
-                badge: '2D Platformer',
-                desc: 'Präziser Plattformer mit Doppel-Sprung, Wall-Sliding, Wall-Jumps, Mid-Air Dash und Kristallsammlung in tödlichen Hindernis-Arealen.',
+                badge: '2D Plattformer',
+                desc: 'Präzisions-Plattformer mit Doppelsprung, Wall-Slide, Wall-Jumps, Mid-Air Dash und Kristallsammlung.',
                 class: 'PlatformerGame',
                 controls: [
-                    { keys: ['A / D / ← / →'], desc: 'Laufen' },
-                    { keys: ['W / Space / ↑'], desc: 'Springen / Wall Jump' },
-                    { keys: ['J / K / Shift'], desc: 'Dash (Geister-Trail)' }
-                ],
-                levels: [
-                    { num: 1, name: 'Zone 1: Erste Hürden', diff: 'Easy' },
-                    { num: 2, name: 'Zone 2: Vertikaler Schacht', diff: 'Normal' },
-                    { num: 3, name: 'Zone 3: Spikes & Abgründe', diff: 'Hard' },
-                    { num: 4, name: 'Zone 4: Präzisions-Sprint', diff: 'Expert' }
+                    { keys: ['A, D / Pfeile'], desc: 'Laufen' },
+                    { keys: ['W / Leertaste'], desc: 'Springen / Wandsprung' },
+                    { keys: ['J / Shift'], desc: 'Dash' }
                 ]
             },
             {
                 id: 'breakout',
-                title: 'Neo-Breakout Deluxe',
+                title: 'Neo-Breakout',
                 category: 'arcade',
                 badge: 'Arcade',
-                desc: 'High-Speed Brick Breaker mit Power-Ups (Multiball, Laserkanone, Feuerball, Breites Paddel), Explosiv-Steinen und dynamischem Abprallwinkel.',
+                desc: 'Brick Breaker mit Ball-Abprallwinkeln, Multiball, Laser-Paddel, TNT-Steinen und Powerups.',
                 class: 'BreakoutGame',
                 controls: [
                     { keys: ['Maus / A, D'], desc: 'Paddel bewegen' },
-                    { keys: ['Space'], desc: 'Laser abfeuern (bei Power-Up)' }
-                ],
-                levels: [
-                    { num: 1, name: 'Stage 1: Neon Grid', diff: 'Easy' },
-                    { num: 2, name: 'Stage 2: Checkerboard', diff: 'Normal' },
-                    { num: 3, name: 'Stage 3: Armored Core', diff: 'Hard' }
+                    { keys: ['Leertaste'], desc: 'Laser abfeuern' }
                 ]
             },
             {
                 id: 'spaceshooter',
-                title: 'Cosmic Strike: Bullet Hell',
+                title: 'Cosmic Strike',
                 category: 'arcade',
                 badge: 'Space Shooter',
-                desc: 'Rasantes vertikales Weltraum-Shooter Game mit Sternenfeld, Wellen von Kampfschiffen, Waffen-Upgrades und gigantischen Endbossen.',
+                desc: 'Bullet-Hell Weltraum-Shooter mit dynamischen Formationen, Schild-Mechanik und Flaggschiff-Bossen.',
                 class: 'SpaceShooterGame',
                 controls: [
-                    { keys: ['Maus / WASD'], desc: 'Raumschiff steuern' },
-                    { keys: ['Auto-Fire'], desc: 'Dauerfeuer aktiviert' }
-                ],
-                levels: [
-                    { num: 1, name: 'Sektor Alpha (Aufklärer)', diff: 'Normal' },
-                    { num: 2, name: 'Sektor Beta (Geschwader)', diff: 'Hard' },
-                    { num: 3, name: 'Sektor Gamma (Dreadnought)', diff: 'Expert' }
+                    { keys: ['Maus / WASD'], desc: 'Schiff steuern' },
+                    { keys: ['Auto-Fire'], desc: 'Automatisches Feuer' }
                 ]
             },
             {
@@ -164,54 +116,36 @@ class GamePortal {
                 title: 'Shadow Labyrinth',
                 category: 'rpg',
                 badge: 'Roguelike',
-                desc: 'Prozedural generierter Dungeon-Crawler mit Raycasting Fog-of-War, Schwertkämpfen, Feuerball-Magie, Monstern und Treppen-Abstiegen.',
+                desc: 'Prozeduraler Dungeon-Crawler mit dynamischem Sichtfeld (Fog of War), Monstern und Magie.',
                 class: 'DungeonGame',
                 controls: [
-                    { keys: ['W / A / S / D'], desc: 'Gehen' },
-                    { keys: ['Space'], desc: 'Schwert-Angriff' },
-                    { keys: ['F / J'], desc: 'Feuerball zaubern' }
-                ],
-                levels: [
-                    { num: 1, name: 'Kerker Ebene 1', diff: 'Normal' },
-                    { num: 2, name: 'Kerker Ebene 2', diff: 'Normal' },
-                    { num: 3, name: 'Kerker Ebene 3 (Katakomben)', diff: 'Hard' },
-                    { num: 4, name: 'Kerker Ebene 4 (Drachenhöhle)', diff: 'Expert' }
+                    { keys: ['W, A, S, D'], desc: 'Gehen' },
+                    { keys: ['Leertaste'], desc: 'Schwertangriff' },
+                    { keys: ['F'], desc: 'Feuerballzauber' }
                 ]
             },
             {
                 id: 'minesweeper',
                 title: 'Hexa & Classic Minesweeper',
                 category: 'puzzle',
-                badge: 'Klassiker / Hexagon',
-                desc: 'Modernes Minesweeper mit 100% fairem Erstklick-Schutz, wahlweise im klassischen Quadrat- oder innovativen 6-Nachbar Hexagon-Gitter.',
+                badge: 'Puzzle Klassiker',
+                desc: 'Modernes Minesweeper mit fairem Erstklick, Quadrat- und 6-Nachbar Hexagon-Gitter.',
                 class: 'MinesweeperGame',
                 controls: [
-                    { keys: ['L-Klick'], desc: 'Feld aufdecken / Chorden' },
-                    { keys: ['R-Klick'], desc: 'Flagge setzen / entfernen' }
-                ],
-                levels: [
-                    { num: 1, name: 'Anfänger 9x9 (10 Minen)', diff: 'Easy' },
-                    { num: 2, name: 'Fortgeschritten 12x12 (20 Minen)', diff: 'Normal' },
-                    { num: 3, name: 'Experte 16x16 (40 Minen)', diff: 'Hard' },
-                    { num: 4, name: 'Hexagonal Feld 10x10', diff: 'Hard' },
-                    { num: 5, name: 'Hexagonal Master 14x14', diff: 'Expert' }
+                    { keys: ['L-Klick'], desc: 'Aufdecken' },
+                    { keys: ['R-Klick'], desc: 'Flagge setzen' }
                 ]
             },
             {
                 id: 'snake3d',
                 title: 'Neon Snake 3D',
                 category: '3d',
-                badge: '3D Neon Arena',
-                desc: 'Futuristische 3D Cyber-Schlange auf leuchtenden Gitternetzen mit Energiebällen, Hindernissen und geschmeidiger Perspektive.',
+                badge: '3D Arcade',
+                desc: '3D Cyber-Schlange auf einem leuchtenden Gitter mit Energie-Orbs und Hindernissen.',
                 class: 'Snake3DGame',
                 controls: [
-                    { keys: ['W / A / S / D'], desc: 'Richtung wechseln' },
+                    { keys: ['W, A, S, D'], desc: 'Richtung wechseln' },
                     { keys: ['Pfeiltasten'], desc: 'Alternative Steuerung' }
-                ],
-                levels: [
-                    { num: 1, name: 'Arena 1: Freies Feld', diff: 'Easy' },
-                    { num: 2, name: 'Arena 2: Säulen-Labyrinth', diff: 'Normal' },
-                    { num: 3, name: 'Arena 3: Todes-Wände', diff: 'Hard' }
                 ]
             }
         ];
@@ -219,9 +153,9 @@ class GamePortal {
 
     init() {
         this.renderGameCards();
-        this.bindGlobalEvents();
+        this.bindEvents();
         this.bindModals();
-        this.bindBossScreen();
+        this.bindStealthKeys();
     }
 
     renderGameCards(filter = 'all', searchQuery = '') {
@@ -238,24 +172,12 @@ class GamePortal {
         filtered.forEach(game => {
             const card = document.createElement('div');
             card.className = 'game-card';
-            card.onclick = () => this.launchGame(game.id);
-
-            // Thumbnail visual gradient based on category
-            const grad = game.category === '3d'
-                ? 'linear-gradient(135deg, #1e3a8a, #3b82f6)'
-                : game.category === 'puzzle'
-                ? 'linear-gradient(135deg, #991b1b, #ef4444)'
-                : game.category === 'strategy'
-                ? 'linear-gradient(135deg, #065f46, #10b981)'
-                : 'linear-gradient(135deg, #581c87, #8b5cf6)';
+            card.onclick = () => this.launchGame(game.id, 1);
 
             card.innerHTML = `
-                <div class="game-thumbnail" style="background: ${grad}">
+                <div class="game-thumbnail">
                     <span class="game-tag-badge">${game.badge}</span>
-                    ${game.featured ? '<span class="game-featured-badge">Featured</span>' : ''}
-                    <div style="font-size: 52px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
-                        ${this.getGameIcon(game.id)}
-                    </div>
+                    <div style="font-size: 38px; color: var(--text-primary);">${this.getGameIcon(game.id)}</div>
                 </div>
                 <div class="game-card-body">
                     <div class="game-card-header">
@@ -263,11 +185,9 @@ class GamePortal {
                     </div>
                     <p class="game-desc">${game.desc}</p>
                     <div class="game-card-footer">
-                        <div class="game-meta">
-                            <span>🎮 ${game.levels.length} Level</span>
-                        </div>
-                        <button class="game-play-btn" onclick="event.stopPropagation(); window.portal.launchGame('${game.id}')">
-                            Spielen ▶
+                        <div class="game-meta">Level 1 - 100+</div>
+                        <button class="game-play-btn" onclick="event.stopPropagation(); window.portal.launchGame('${game.id}', 1)">
+                            Starten
                         </button>
                     </div>
                 </div>
@@ -278,21 +198,21 @@ class GamePortal {
 
     getGameIcon(id) {
         switch (id) {
-            case 'minecraft': return '⛏️';
-            case 'rushhour': return '🚗';
-            case 'racing3d': return '🏎️';
-            case 'towerdefense': return '🛡️';
-            case 'platformer': return '⚡';
-            case 'breakout': return '🧱';
-            case 'spaceshooter': return '🚀';
-            case 'dungeon': return '🗡️';
-            case 'minesweeper': return '💣';
-            case 'snake3d': return '🐍';
-            default: return '🕹️';
+            case 'minecraft': return '▣';
+            case 'rushhour': return '▤';
+            case 'racing3d': return '◈';
+            case 'towerdefense': return '▲';
+            case 'platformer': return '◆';
+            case 'breakout': return '▦';
+            case 'spaceshooter': return '▲';
+            case 'dungeon': return '❖';
+            case 'minesweeper': return '⬡';
+            case 'snake3d': return '◯';
+            default: return '▶';
         }
     }
 
-    bindGlobalEvents() {
+    bindEvents() {
         // Category Pills
         const pills = document.querySelectorAll('.category-pill');
         pills.forEach(p => {
@@ -302,7 +222,6 @@ class GamePortal {
                 const cat = p.dataset.category;
                 const search = document.getElementById('search-games')?.value || '';
                 this.renderGameCards(cat, search);
-                if (window.AudioManager) window.AudioManager.playClick();
             };
         });
 
@@ -315,60 +234,36 @@ class GamePortal {
             };
         }
 
-        // Fullscreen Toggle Button
+        // Fullscreen
         const fsBtn = document.getElementById('btn-fullscreen');
         if (fsBtn) {
             fsBtn.onclick = () => this.toggleFullscreen();
         }
 
-        // Sound Mute Toggle Button
+        // Sound Mute
         const muteBtn = document.getElementById('btn-mute');
         if (muteBtn) {
             muteBtn.onclick = () => {
                 const isMuted = window.AudioManager.toggleMute();
-                muteBtn.innerHTML = isMuted ? '🔇 Muted' : '🔊 Sound';
-                this.showToast(isMuted ? 'Ton stummgeschaltet' : 'Ton aktiviert');
+                muteBtn.innerText = isMuted ? 'Stumm' : 'Sound';
             };
         }
 
-        // Back to Portal Button
+        // Back to Hub
         const backBtn = document.getElementById('btn-back-hub');
         if (backBtn) {
             backBtn.onclick = () => this.closeActiveGame();
         }
 
-        // Controls Modal button
-        const controlsBtn = document.getElementById('btn-show-controls');
-        if (controlsBtn) {
-            controlsBtn.onclick = () => this.openControlsModal();
-        }
-
         // Level Select button on top bar
         const lvlBtn = document.getElementById('btn-show-levels');
-        if (lvlBtn) {
-            lvlBtn.onclick = () => this.openLevelSelectModal();
-        }
+        const lvlIndicator = document.getElementById('active-level-indicator');
+        if (lvlBtn) lvlBtn.onclick = () => this.openLevelSelectModal();
+        if (lvlIndicator) lvlIndicator.onclick = () => this.openLevelSelectModal();
 
-        // Global Boss Key Listener ('B') & Quick Close ('N')
-        window.addEventListener('keydown', (e) => {
-            // Check if typing inside Google docs page or search input
-            const activeEl = document.activeElement;
-            const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.isContentEditable);
-
-            if (e.code === this.bossKey && !isTyping) {
-                e.preventDefault();
-                this.toggleBossScreen();
-            } else if (e.code === this.panicCloseKey && (this.isBossActive || !isTyping)) {
-                e.preventDefault();
-                this.emergencyCloseTab();
-            }
-        });
-
-        // Stealth button in header
-        const bossBtn = document.getElementById('btn-stealth-boss');
-        if (bossBtn) {
-            bossBtn.onclick = () => this.toggleBossScreen();
-        }
+        // Controls button
+        const controlsBtn = document.getElementById('btn-show-controls');
+        if (controlsBtn) controlsBtn.onclick = () => this.openControlsModal();
     }
 
     bindModals() {
@@ -388,20 +283,87 @@ class GamePortal {
                 if (e.target === overlay) closeModals();
             };
         });
+
+        // Level Jump Input
+        const jumpBtn = document.getElementById('btn-level-jump');
+        const jumpInput = document.getElementById('level-jump-val');
+        if (jumpBtn && jumpInput) {
+            jumpBtn.onclick = () => {
+                const val = parseInt(jumpInput.value, 10);
+                if (val >= 1 && val <= 1000) {
+                    document.getElementById('level-modal')?.classList.remove('active');
+                    this.launchGame(this.currentGameId, val);
+                }
+            };
+        }
     }
 
-    launchGame(gameId, levelIndex = 1, difficulty = 'Normal') {
+    bindStealthKeys() {
+        // Global listener: 'B' toggles Google Docs, 'N' closes tab
+        window.addEventListener('keydown', (e) => {
+            const activeEl = document.activeElement;
+            const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.isContentEditable);
+
+            if (e.code === this.bossKey && !isTyping) {
+                e.preventDefault();
+                this.toggleBossScreen();
+            } else if (e.code === this.panicCloseKey && (this.isBossActive || !isTyping)) {
+                e.preventDefault();
+                this.emergencyCloseTab();
+            }
+        });
+    }
+
+    toggleBossScreen() {
+        this.isBossActive = !this.isBossActive;
+        const screen = document.getElementById('boss-screen-decoy');
+
+        if (this.isBossActive) {
+            if (this.currentGame && this.currentGame.pause) {
+                this.currentGame.pause();
+            }
+            if (window.AudioManager) window.AudioManager.setMuted(true);
+
+            document.title = 'RFC-4092: Lock-Free Distributed Ring Cache Architecture - Google Docs';
+            screen?.classList.add('active');
+        } else {
+            screen?.classList.remove('active');
+            document.title = 'Arcade Realm - Browser Games Portal';
+
+            if (window.AudioManager) window.AudioManager.setMuted(false);
+            if (this.currentGame && this.currentGame.resume) {
+                this.currentGame.resume();
+            }
+        }
+    }
+
+    emergencyCloseTab() {
+        try {
+            window.close();
+        } catch (e) {}
+        window.location.replace('https://www.google.com');
+    }
+
+    getDifficultyName(level) {
+        if (level <= 5) return 'Einfach';
+        if (level <= 15) return 'Mittel';
+        if (level <= 30) return 'Schwer';
+        if (level <= 60) return 'Experte';
+        return 'Master';
+    }
+
+    launchGame(gameId, levelIndex = 1) {
         const meta = this.games.find(g => g.id === gameId);
         if (!meta) return;
 
         // Destroy old game if running
         if (this.currentGame && this.currentGame.destroy) {
             this.currentGame.destroy();
+            this.currentGame = null;
         }
 
         this.currentGameId = gameId;
         this.currentLevel = levelIndex;
-        this.currentDifficulty = difficulty;
 
         // Show Game Viewport
         const viewport = document.getElementById('game-viewport');
@@ -410,23 +372,22 @@ class GamePortal {
 
         if (viewport) viewport.classList.add('active');
         if (titleEl) titleEl.innerText = `${meta.title}`;
-        if (lvlPill) lvlPill.innerText = `Level ${levelIndex} (${difficulty}) ▾`;
+        if (lvlPill) lvlPill.innerText = `Level ${levelIndex} (${this.getDifficultyName(levelIndex)}) ▾`;
 
         const container = document.getElementById('game-container');
         container.innerHTML = '';
 
-        // Instantiate Game
-        const GameClass = window[meta.class];
-        if (GameClass) {
-            this.currentGame = new GameClass();
-            this.currentGame.init(container, {
-                levelIndex: levelIndex,
-                difficulty: difficulty
-            });
-        }
-
-        if (window.AudioManager) window.AudioManager.playSelect();
-        this.showToast(`${meta.title} gestartet! [Taste B = Google Docs Tarnmodus]`);
+        // Allow DOM reflow so clientWidth and clientHeight are strictly valid
+        requestAnimationFrame(() => {
+            const GameClass = window[meta.class];
+            if (GameClass) {
+                this.currentGame = new GameClass();
+                this.currentGame.init(container, {
+                    levelIndex: levelIndex,
+                    difficulty: this.getDifficultyName(levelIndex)
+                });
+            }
+        });
     }
 
     closeActiveGame() {
@@ -438,40 +399,66 @@ class GamePortal {
 
         const viewport = document.getElementById('game-viewport');
         if (viewport) viewport.classList.remove('active');
-
-        if (window.AudioManager) window.AudioManager.playClick();
     }
 
     openLevelSelectModal() {
         if (!this.currentGameId) return;
-        const meta = this.games.find(g => g.id === this.currentGameId);
-        if (!meta) return;
 
         if (this.currentGame && this.currentGame.pause) {
             this.currentGame.pause();
         }
 
         const modal = document.getElementById('level-modal');
+        const tabsContainer = document.getElementById('level-page-tabs');
         const grid = document.getElementById('level-modal-grid');
+        const jumpInput = document.getElementById('level-jump-val');
+
+        if (jumpInput) jumpInput.value = this.currentLevel;
+
+        // Build 10 page tabs (1-10, 11-20, ... 91-100)
+        tabsContainer.innerHTML = '';
+        const currentPage = Math.ceil(this.currentLevel / 10);
+
+        for (let p = 1; p <= 10; p++) {
+            const start = (p - 1) * 10 + 1;
+            const end = p * 10;
+            const tab = document.createElement('div');
+            tab.className = `level-page-tab ${p === currentPage ? 'active' : ''}`;
+            tab.innerText = `${start}-${end}`;
+            tab.onclick = () => {
+                tabsContainer.querySelectorAll('.level-page-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.renderLevelPage(p);
+            };
+            tabsContainer.appendChild(tab);
+        }
+
+        this.renderLevelPage(currentPage);
+        modal.classList.add('active');
+    }
+
+    renderLevelPage(page) {
+        const grid = document.getElementById('level-modal-grid');
+        if (!grid) return;
         grid.innerHTML = '';
 
-        meta.levels.forEach(lvl => {
+        const start = (page - 1) * 10 + 1;
+        const end = page * 10;
+
+        for (let lvl = start; lvl <= end; lvl++) {
+            const diff = this.getDifficultyName(lvl);
             const btn = document.createElement('div');
-            btn.className = `level-item-btn ${lvl.num === this.currentLevel ? 'selected' : ''}`;
+            btn.className = `level-item-btn ${lvl === this.currentLevel ? 'selected' : ''}`;
             btn.innerHTML = `
-                <div class="level-num">${lvl.num}</div>
-                <div class="level-difficulty-tag">${lvl.diff}</div>
+                <div class="level-num">${lvl}</div>
+                <div class="level-difficulty-tag">${diff}</div>
             `;
             btn.onclick = () => {
-                this.currentLevel = lvl.num;
-                this.currentDifficulty = lvl.diff;
-                modal.classList.remove('active');
-                this.launchGame(this.currentGameId, lvl.num, lvl.diff);
+                document.getElementById('level-modal')?.classList.remove('active');
+                this.launchGame(this.currentGameId, lvl);
             };
             grid.appendChild(btn);
-        });
-
-        modal.classList.add('active');
+        }
     }
 
     openControlsModal() {
@@ -499,81 +486,7 @@ class GamePortal {
             list.appendChild(row);
         });
 
-        // Add standard universal keys info
-        const universal = [
-            { keys: ['B'], desc: 'Google Docs Stealth Screen (Tarnung)' },
-            { keys: ['N'], desc: 'Notfall: Tab sofort schliessen' },
-            { keys: ['F11 / Button'], desc: 'Vollbildmodus umschalten' }
-        ];
-
-        const divider = document.createElement('div');
-        divider.style.cssText = 'height:1px; background:#334155; margin:12px 0;';
-        list.appendChild(divider);
-
-        universal.forEach(u => {
-            const row = document.createElement('div');
-            row.className = 'control-row';
-            row.innerHTML = `
-                <div class="control-desc" style="color:#93c5fd;">${u.desc}</div>
-                <div class="control-keys">
-                    ${u.keys.map(k => `<span class="key-badge" style="border-color:#3b82f6;">${k}</span>`).join('')}
-                </div>
-            `;
-            list.appendChild(row);
-        });
-
         modal.classList.add('active');
-    }
-
-    /* Stealth Boss Key Feature (Google Docs Decoy Screen) */
-    bindBossScreen() {
-        const decoy = document.getElementById('boss-screen-decoy');
-        if (!decoy) return;
-
-        // Clicking the back button inside decoy screen returns to game
-        const backBtn = document.getElementById('btn-boss-return');
-        if (backBtn) {
-            backBtn.onclick = () => this.toggleBossScreen();
-        }
-    }
-
-    toggleBossScreen() {
-        this.isBossActive = !this.isBossActive;
-        const screen = document.getElementById('boss-screen-decoy');
-
-        if (this.isBossActive) {
-            // Pause current game and mute sound
-            if (this.currentGame && this.currentGame.pause) {
-                this.currentGame.pause();
-            }
-            if (window.AudioManager) window.AudioManager.setMuted(true);
-
-            // Change page title & favicon to disguise in browser tabs
-            document.title = 'Q4 Strategic Operations & Budget Allocation - Google Docs';
-            const icon = document.querySelector("link[rel*='icon']");
-            if (icon) icon.href = 'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico';
-
-            screen.classList.add('active');
-        } else {
-            // Restore game
-            screen.classList.remove('active');
-            document.title = 'Arcade Realm - High Quality Browser Games';
-
-            if (window.AudioManager) window.AudioManager.setMuted(false);
-            if (this.currentGame && this.currentGame.resume) {
-                this.currentGame.resume();
-            }
-        }
-    }
-
-    emergencyCloseTab() {
-        try {
-            window.close();
-        } catch (e) {}
-
-        // If programmatic window.close is blocked by browser policies:
-        // Redirect immediately to clean Google search page
-        window.location.replace('https://www.google.com');
     }
 
     toggleFullscreen() {
@@ -585,26 +498,9 @@ class GamePortal {
             }
         }
     }
-
-    showToast(message) {
-        let toast = document.getElementById('portal-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'portal-toast';
-            toast.className = 'toast-msg';
-            document.body.appendChild(toast);
-        }
-        toast.innerText = message;
-        toast.classList.add('show');
-        clearTimeout(this.toastTimeout);
-        this.toastTimeout = setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3200);
-    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     window.portal = new GamePortal();
     window.portal.init();
 });
-

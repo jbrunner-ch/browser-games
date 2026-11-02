@@ -1,6 +1,6 @@
-# 🎮 Arcade Realm - High Quality Browser Games
+# 🎮 Arcade Realm - Web Games Portal
 
-Eine moderne, qualitativ hochwertige Sammlung von 10 Browsergames mit 3D- und 2D-Engines, prozeduraler Levelgenerierung, Sound-Synthese und integriertem Stealth-Modus. Alles läuft 100% lokal im Browser oder direkt über **GitHub Pages** ohne jegliche Backend-Abhängigkeiten.
+Ein minimalistisches, modulares Browsergame-Portal mit 10 Spielen, dynamischer Level-Skalierung (Level 1 - 100+), reiner Client-Side-Architektur (Three.js & Canvas 2D) und geheimem Stealth-Modus.
 
 ---
 
@@ -8,74 +8,65 @@ Eine moderne, qualitativ hochwertige Sammlung von 10 Browsergames mit 3D- und 2D
 
 | # | Spiel | Genre | Highlights |
 |---|---|---|---|
-| 1 | **VoxelCraft 3D** | 3D Voxel Sandbox | Minecraft-Mechaniken, prozedurale Welten (Hügel, Berge, Wüsten, schwebende Inseln), Tag/Nacht-Zyklus, Hotbar 1-9, Mining & Blockbau |
-| 2 | **Traffic Escape (Rush Hour)** | 2D Top-Down Puzzle | Rotes Sportauto aus dem Parkplatz befreien, Schiebemechanik, Zugzähler, Undo-Funktion, prozedurale & kuratierte Parkplätze |
-| 3 | **Velocity Rush 3D** | 3D Racing | Echte Fahrphysik, Drifting mit Reifenspuren, dynamische Rennstrecken, KI-Gegner, Speedometer & HUD |
-| 4 | **Cyber Siege** | Tower Defense | Wellen-Verteidigung, Gatling, Plasma-AOE, Cryo-Frost & Tesla-Chain Türme mit Upgrade-System |
-| 5 | **Gravity Runner** | 2D Platformer | Präzisions-Plattformer mit Wandsprüngen, Wall-Slide, Mid-Air Dash und Kristallsammlung |
-| 6 | **Neo-Breakout Deluxe** | Arcade Brick Breaker | Ball-Abprallphysik, Laser-Paddel, Multiball, Explosiv-Bricks und Spezial-Powerups |
-| 7 | **Cosmic Strike** | Space Bullet-Hell | Sternenfeld-Parallax, Squadrons, Waffen-Upgrades und riesige Endbosse |
-| 8 | **Shadow Labyrinth** | Roguelike Dungeon | Prozeduraler Dungeon-Generator mit dynamischem Fog-of-War (Sichtfeld), Schwert- und Zauberkampf |
+| 1 | **VoxelCraft 3D** | 3D Voxel Engine | Minecraft-Mechaniken, prozedurale Welten (Hügel, Berge, Wüsten), Tag/Nacht-Zyklus, Hotbar 1-9, Mining & Blockbau |
+| 2 | **Traffic Escape (Rush Hour)** | 2D Top-Down Puzzle | Rotes Auto befreien, garantierte Lösbarkeit, Zugzähler, Undo-Funktion, Skalierung bis 100+ |
+| 3 | **Velocity Rush 3D** | 3D Racing | Echte Fahrphysik, Drifting (`Leertaste`), dynamische Strecken, KI-Gegner, Speedometer & Rundenzeiten |
+| 4 | **Cyber Siege** | Tower Defense | Wellen-Verteidigung mit Gatling-, Plasma-, Cryo- und Tesla-Türmen inklusive Upgrade-System |
+| 5 | **Gravity Runner** | 2D Plattformer | Präzisions-Runner mit Wandsprüngen, Wall-Slide, Mid-Air Dash und Kristallsammlung |
+| 6 | **Neo-Breakout** | Arcade Brick Breaker | Ball-Abprallphysik, Laser-Paddel, Multiball, gepanzerte Steine und Spezial-Powerups |
+| 7 | **Cosmic Strike** | Space Bullet-Hell | Sternenfeld-Parallax, Squadrons, Waffen-Upgrades und Dreadnought-Bosse |
+| 8 | **Shadow Labyrinth** | Roguelike Dungeon | Prozeduraler Kerker mit dynamischem Fog-of-War (Sichtfeld), Schwert- und Zauberkampf |
 | 9 | **Hexa & Classic Minesweeper** | Puzzle Klassiker | 100% fairer Erstklick-Schutz, wahlweise im klassischen Quadrat- oder Hexagonal-Gitter |
 | 10 | **Neon Snake 3D** | 3D Arcade | Cyberpunk-Schlange in 3D Arena mit Energie-Orbs und Hindernis-Parcours |
 
 ---
 
-## 🚀 Steuerung & Tastenkürzel
+## 🎯 Level-System (Level 1 - 100+)
 
-### Einheitliche Globale Tasten
-- **`B`**: **Stealth Boss Key** 🕵️ – Pausiert sofort jedes Spiel, schaltet den Ton stumm und wechselt in Millisekunden auf einen täuschend echten **Google Docs Tarnbildschirm** (vollständig editierbar). Erneutes Drücken von `B` oder Klick auf "Zurück" setzt das Spiel fort.
-- **`N`**: **Notfall-Schnellschliessung** 🚨 – Schliesst sofort den Tab (`window.close()` bzw. leitet sofort auf Google um, falls Pop-up-Blocker greifen).
-- **`F11` / Button**: **Vollbildmodus** (Fullscreen ein-/ausschalten).
+Jedes Spiel verfügt über ein dynamisches Level-System, das über den **"Level wählen"** Button oder den Level-Indikator aufgerufen werden kann:
+- **Level 1 - 5**: Einfach (Einstieg & Basismechaniken)
+- **Level 6 - 15**: Mittel (Höhere Geschwindigkeit, mehr Hindernisse)
+- **Level 16 - 30**: Schwer (Komplexe Layouts, aggressivere Gegner)
+- **Level 31 - 60**: Experte (Hohe Anforderungen an Präzision und Timing)
+- **Level 61 - 100+**: Master (Mathematisch skalierte Endlos-Herausforderung)
 
-### Spiel-Steuerungen
-- **VoxelCraft 3D**: `W, A, S, D` zum Gehen, `Leertaste` zum Springen, `Maus` zum Umsehen (Klick aktiviert Pointer-Lock), `L-Klick` zum Abbauen, `R-Klick` zum Platzieren, `1-9` Block wählen.
-- **Traffic Escape**: `Mausklick + Ziehen` auf Autos, um sie horizontal oder vertikal zu verschieben.
-- **Velocity Rush 3D**: `W` / `↑` Gas, `S` / `↓` Bremse / Rückwärts, `A` / `D` Lenken, `Leertaste` Handbremse / Drift.
-- **Weitere**: Im Spiel jeweils über den Button **"Steuerung"** in der oberen Leiste einsehbar.
+Über die **Tabs (1-10, 11-20, ...)** oder das **Level-Eingabefeld** kann direkt zu jedem beliebigen Level gesprungen werden. Bei Level-Abschluss führt die Schaltfläche **"Nächstes Level ➔"** nahtlos in die nächste Stufe.
 
 ---
 
-## 📁 Projektstruktur
+## 🕵️ Geheime Stealth-Funktionen (Nicht in der UI sichtbar)
 
-```
+- **Taste `B`**: Aktiviert sofort den **Google Docs Tarnmodus**. Das Spiel wird pausiert, der Ton stummgeschaltet und es erscheint ein täuschend echter Google-Docs-Tab mit einem Informatik-Architekturdokument (`RFC-4092: Lock-Free Distributed Ring Cache Architecture`) inklusive echten Rust- und Go-Codebeispielen und Benchmarks. Erneutes Drücken von `B` schaltet nahtlos zurück.
+- **Taste `N`**: Notfall-Schliessung. Schliesst sofort den Tab (`window.close()`) bzw. leitet direkt auf die Google-Startseite um.
+- **Vollbild**: Über den Button **"Vollbild"** in der Kopfzeile oder Taste `F11`.
+
+---
+
+## 📁 Dateistruktur
+
+```text
 browser-games/
-├── index.html                 # Hauptseite & Google Docs Stealth Screen
+├── index.html                 # Hauptportal & Google Docs CS RFC
 ├── README.md                  # Dokumentation
 ├── css/
-│   ├── main.css               # Portal-Styles, Navigationsleiste, Grid, Modale
-│   ├── games.css              # HUDs, Speedometer, Minecraft-Hotbar, Overlays
-│   └── doc-stealth.css        # Pixel-genauer Google Docs Tarnbildschirm
+│   ├── main.css               # Minimalistisches Dark-Theme (keine AI-Gradients)
+│   ├── games.css              # Canvas Overlays, Speedometer, HUDs
+│   └── doc-stealth.css        # Pixel-genaues Google Docs Styling
 ├── js/
-│   ├── audio.js               # Web Audio API Synthesizer (Zero-Dependency Sounds)
-│   ├── portal.js              # Master Controller, Game Switching, Level Manager
+│   ├── audio.js               # Web Audio API Sound Synthesizer
+│   ├── portal.js              # Game Controller, Level Manager 1-100+, Stealth Keys
 │   └── games/
 │       ├── minecraft.js       # 3D Voxel Engine (Three.js)
 │       ├── rushhour.js        # 2D Parkplatz-Puzzle
-│       ├── racing3d.js        # 3D Rennspiel mit Physik
-│       ├── towerdefense.js    # Tower Defense
-│       ├── platformer.js      # 2D Precision Runner
+│       ├── racing3d.js        # 3D Rennspiel mit Fahrphysik
+│       ├── towerdefense.js    # Cyber Siege Tower Defense
+│       ├── platformer.js      # Gravity Runner Plattformer
 │       ├── breakout.js        # Neo-Breakout Brick Breaker
-│       ├── spaceshooter.js    # Space Bullet Hell
+│       ├── spaceshooter.js    # Cosmic Strike Bullet Hell
 │       ├── dungeon.js         # Roguelike Dungeon Crawler
-│       ├── minesweeper.js     # Hexa & Classic Minesweeper
-│       └── snake3d.js         # 3D Cyber Snake
+│       ├── minesweeper.js     # Hexa & Square Minesweeper
+│       └── snake3d.js         # Neon Snake 3D
+└── tests/
+    ├── integration.test.js    # DOM- & Klassen-Validierung
+    └── game_instances.test.js # Headless Lifecycle & Level-Progressionstests
 ```
-
----
-
-## 🌐 Lokale Ausführung & GitHub Pages
-
-### Lokal im Browser öffnen
-Einfach `index.html` per Doppelklick in einem beliebigen modernen Browser (Chrome, Firefox, Edge, Safari) öffnen. Es ist kein Build-Step erforderlich.
-
-### Auf GitHub Pages veröffentlichen
-1. Repository zu GitHub pushen:
-   ```bash
-   git add .
-   git commit -m "Add Arcade Realm multi-game portal"
-   git push origin main
-   ```
-2. Auf GitHub im Repository unter **Settings -> Pages** den Branch `main` und Ordner `/ (root)` auswählen und speichern.
-3. Die Webapplikation ist sofort weltweit unter `https://<dein-username>.github.io/<repo-name>/` erreichbar!
-
