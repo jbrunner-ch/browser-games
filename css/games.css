@@ -1,0 +1,375 @@
+/* Game-specific HUDs, Overlays & Controls */
+
+/* Common Canvas Layer */
+.game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    outline: none;
+}
+
+/* Minecraft UI */
+.mc-hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+    z-index: 20;
+}
+
+.mc-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+}
+
+.mc-crosshair::before, .mc-crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.mc-crosshair::before {
+    top: 9px;
+    left: 0;
+    width: 20px;
+    height: 2px;
+}
+
+.mc-crosshair::after {
+    top: 0;
+    left: 9px;
+    width: 2px;
+    height: 20px;
+}
+
+.mc-hotbar-container {
+    margin: 0 auto 10px;
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 6px;
+    border-radius: 8px;
+    border: 2px solid #555;
+    pointer-events: auto;
+}
+
+.mc-hotbar-slot {
+    width: 46px;
+    height: 46px;
+    background: rgba(80, 80, 80, 0.6);
+    border: 2px solid #333;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+}
+
+.mc-hotbar-slot.active {
+    border: 3px solid #fff;
+    background: rgba(120, 120, 120, 0.8);
+    transform: scale(1.1);
+}
+
+.mc-block-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 3px;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+}
+
+.mc-slot-num {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 10px;
+    color: #eee;
+    font-weight: bold;
+    text-shadow: 1px 1px #000;
+}
+
+.mc-debug-info {
+    color: #fff;
+    font-family: monospace;
+    font-size: 13px;
+    text-shadow: 1px 1px 2px #000;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 12px;
+    border-radius: 6px;
+    max-width: fit-content;
+}
+
+/* 3D Racing HUD */
+.racing-hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
+    z-index: 20;
+}
+
+.racing-top-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.racing-pos-lap {
+    display: flex;
+    gap: 16px;
+}
+
+.racing-badge {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+}
+
+.racing-badge .label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.racing-badge .value {
+    font-size: 24px;
+    font-weight: 900;
+    color: #fff;
+}
+
+.racing-speedometer {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.9) 0%, rgba(10, 15, 29, 0.95) 100%);
+    border: 2px solid rgba(59, 130, 246, 0.5);
+    border-radius: 50%;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.speed-digital {
+    font-size: 38px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    font-family: monospace;
+}
+
+.speed-unit {
+    font-size: 12px;
+    color: #3b82f6;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.gear-indicator {
+    position: absolute;
+    bottom: -10px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
+/* Rush Hour Car Puzzle UI */
+.rush-hud {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 20px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    z-index: 20;
+}
+
+.rush-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.rush-stat-val {
+    color: #3b82f6;
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.rush-controls-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 20;
+}
+
+.btn-game-action {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-game-action:hover {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+}
+
+/* General Game Pause / Overlay Screen */
+.game-pause-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 40;
+}
+
+.game-pause-overlay.active {
+    display: flex;
+}
+
+.pause-title {
+    font-size: 36px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.pause-menu-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 220px;
+}
+
+/* Win Overlay */
+.game-win-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(10px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 45;
+    animation: fadeIn 0.3s;
+}
+
+.game-win-overlay.active {
+    display: flex;
+}
+
+.win-title {
+    font-size: 40px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.win-subtitle {
+    color: #94a3b8;
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+/* Tower Defense Sidebar/Shop */
+.td-shop {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 8px 16px;
+    display: flex;
+    gap: 12px;
+    z-index: 20;
+}
+
+.td-tower-card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 70px;
+}
+
+.td-tower-card:hover, .td-tower-card.selected {
+    background: #3b82f6;
+    border-color: #60a5fa;
+    transform: translateY(-2px);
+}
+
+.td-tower-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.td-tower-cost {
+    font-size: 10px;
+    color: #fbbf24;
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
