@@ -22,6 +22,11 @@
         </div>
 
         <div class="header-actions">
+            <button class="action-btn action-btn-profile" id="btn-cloud-profile" title="Cloud Profil & Login">
+                <span class="user-avatar-badge">👤</span>
+                <span id="header-username">Gast</span>
+            </button>
+            <button class="action-btn" id="btn-cloud-leaderboard" title="Bestenlisten & Gruppen">🏆 Rangliste</button>
             <button class="action-btn" id="btn-mute" title="Sound umschalten">Sound</button>
             <button class="action-btn" id="btn-fullscreen" title="Vollbildmodus">Vollbild</button>
         </div>
@@ -299,6 +304,112 @@
         </div>
     </div>
 
+    
+    <!-- Cloud, Auth, Groups & Leaderboard Modal -->
+    <div class="modal-overlay" id="cloud-modal">
+        <div class="modal-box cloud-modal-box">
+            <div class="modal-header">
+                <div class="modal-title" id="cloud-modal-title">Cloud Profil & Gruppen</div>
+                <button class="modal-close-btn" id="cloud-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Navigation Tabs -->
+                <div class="cloud-tabs">
+                    <button class="cloud-tab active" data-tab="tab-profile">👤 Profil & Login</button>
+                    <button class="cloud-tab" data-tab="tab-leaderboard">🏆 Bestenlisten</button>
+                    <button class="cloud-tab" data-tab="tab-groups">👥 Gruppen</button>
+                    <button class="cloud-tab" data-tab="tab-progress">💾 Spielstände</button>
+                </div>
+
+                <!-- Tab: Profile & Auth -->
+                <div class="cloud-tab-content active" id="tab-profile">
+                    <div class="profile-card">
+                        <div class="profile-avatar">🎮</div>
+                        <div class="profile-details">
+                            <h3 id="profile-display-name">Gast-Spieler</h3>
+                            <div class="profile-badges">
+                                <span class="badge" id="profile-status-badge">Gast (Lokal)</span>
+                                <span class="badge badge-accent" id="profile-sync-badge">☁️ Bereit für Firebase</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-forms">
+                        <div class="auth-section">
+                            <h4>Spielerprofil / Benutzername</h4>
+                            <p class="auth-hint">Gib deinen Spielernamen ein, um deine Highscores und erreichten Level zu speichern und in Bestenlisten aufzutauchen.</p>
+                            <div class="auth-input-group">
+                                <input type="text" id="auth-username-input" class="cloud-input" placeholder="Spielername (z.B. CyberRacer)" maxlength="20">
+                                <button class="btn-primary" id="btn-auth-save">Speichern / Anmelden</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="firebase-info-box">
+                        <div class="firebase-header">
+                            <span class="fb-icon">🔥</span>
+                            <strong>Firebase Cloud Vorbereitung</strong>
+                        </div>
+                        <p>Die Architektur ist vollständig auf Firebase Firestore & Auth vorbereitet. Aktuell speichert das System alle Fortschritte lokal im Browser (Offline-fähig). Trage einfach deine Firebase-Konfiguration in <code>window.FIREBASE_CONFIG</code> ein, um weltweite Echtzeit-Synchronisation zu aktivieren!</p>
+                    </div>
+                </div>
+
+                <!-- Tab: Leaderboard -->
+                <div class="cloud-tab-content" id="tab-leaderboard">
+                    <div class="leaderboard-controls">
+                        <select id="lb-game-select" class="cloud-select"></select>
+                        <div class="lb-scope-toggle">
+                            <button class="scope-btn active" id="btn-scope-global" data-scope="global">🌍 Global</button>
+                            <button class="scope-btn" id="btn-scope-group" data-scope="group">👥 Gruppe</button>
+                        </div>
+                    </div>
+                    <div class="leaderboard-table-wrapper">
+                        <table class="cloud-table" id="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 48px;">Rang</th>
+                                    <th>Spieler</th>
+                                    <th>Level</th>
+                                    <th>Punkte</th>
+                                    <th>Datum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab: Groups -->
+                <div class="cloud-tab-content" id="tab-groups">
+                    <div class="groups-actions">
+                        <div class="group-action-box">
+                            <h4>Neue Gruppe gründen</h4>
+                            <div class="input-row">
+                                <input type="text" id="group-name-input" class="cloud-input" placeholder="Gruppenname (z.B. Squad Alpha)" maxlength="24">
+                                <button class="btn-primary" id="btn-create-group">Gründen</button>
+                            </div>
+                        </div>
+                        <div class="group-action-box">
+                            <h4>Mit Code beitreten</h4>
+                            <div class="input-row">
+                                <input type="text" id="group-code-input" class="cloud-input" placeholder="Code (z.B. SPEED1)" maxlength="12">
+                                <button class="btn-secondary" id="btn-join-group">Beitreten</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-top:18px; margin-bottom:10px; font-size:14px;">Deine beigetretenen Gruppen</h4>
+                    <div class="groups-list" id="groups-list"></div>
+                </div>
+
+                <!-- Tab: Progress -->
+                <div class="cloud-tab-content" id="tab-progress">
+                    <div class="progress-grid" id="progress-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="portal-toast" class="toast-msg"></div>
 
@@ -314,6 +425,7 @@
     <script src="js/games/dungeon.js"></script>
     <script src="js/games/minesweeper.js"></script>
     <script src="js/games/snake3d.js"></script>
+    <script src="js/cloud.js"></script>
     <script src="js/portal.js"></script>
 
 </body>

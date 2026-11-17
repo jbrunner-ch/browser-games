@@ -1209,7 +1209,7 @@
             });
 
             this.geo = {
-                seg: new THREE.BoxGeometry(1.25, 1.25, 1.25),
+                seg: new THREE.CylinderGeometry(0.66, 0.66, 1.18, 16),
                 obs: new THREE.BoxGeometry(1.35, 1.35, 1.35),
                 apple: new THREE.IcosahedronGeometry(0.6, 1),
                 patrol: new THREE.OctahedronGeometry(0.75),
