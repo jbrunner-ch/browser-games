@@ -1162,13 +1162,27 @@
 
         /* ============================ 3D rendering ========================== */
 
+        makeCanvasTex(w, h, draw, rep = 1) {
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            draw(cv.getContext('2d'), w, h);
+            const t = new THREE.CanvasTexture(cv);
+            if (rep > 1) {
+                t.wrapS = THREE.RepeatWrapping;
+                t.wrapT = THREE.RepeatWrapping;
+                t.repeat.set(rep, rep);
+            }
+            this.disposables.push(t);
+            return t;
+        }
+
         buildScene(canvas) {
             const w = Math.max(300, this.container.clientWidth || window.innerWidth);
             const h = Math.max(300, this.container.clientHeight || (window.innerHeight - 48));
 
             this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0x050816);
-            this.scene.fog = new THREE.FogExp2(0x050816, 0.016);
+            this.scene.background = new THREE.Color(0x030712);
+            this.scene.fog = new THREE.FogExp2(0x030712, 0.014);
 
             this.camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 400);
             this.updateCameraBase();
@@ -1179,76 +1193,190 @@
 
             this.clock = new THREE.Clock();
 
-            this.scene.add(new THREE.HemisphereLight(0x7dd3fc, 0x1e1b4b, 0.8));
-            const sun = new THREE.DirectionalLight(0xffffff, 0.7);
-            sun.position.set(8, 22, 6);
+            this.scene.add(new THREE.HemisphereLight(0x7dd3fc, 0x1e1b4b, 0.9));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.85);
+            sun.position.set(10, 26, 8);
             this.scene.add(sun);
-            this.headLight = new THREE.PointLight(0x22d3ee, 1.4, 16);
+            const rim = new THREE.DirectionalLight(0x6366f1, 0.45);
+            rim.position.set(-14, 10, -12);
+            this.scene.add(rim);
+            this.headLight = new THREE.PointLight(0x22d3ee, 1.8, 16);
             this.scene.add(this.headLight);
 
             const size = N * CELL;
+
+            // Procedural Cyber Circuit Arena Floor Texture
+            const floorTex = this.makeCanvasTex(128, 128, (g, cw, ch) => {
+                g.fillStyle = '#070d1f';
+                g.fillRect(0, 0, cw, ch);
+                g.strokeStyle = 'rgba(79, 70, 229, 0.35)';
+                g.lineWidth = 2;
+                g.strokeRect(1, 1, cw - 2, ch - 2);
+                g.strokeStyle = 'rgba(34, 211, 238, 0.14)';
+                g.lineWidth = 1;
+                g.beginPath();
+                g.moveTo(0, ch / 2); g.lineTo(cw * 0.25, ch / 2); g.lineTo(cw * 0.35, ch * 0.3);
+                g.moveTo(cw, ch / 2); g.lineTo(cw * 0.75, ch / 2); g.lineTo(cw * 0.65, ch * 0.7);
+                g.stroke();
+                g.fillStyle = 'rgba(56, 189, 248, 0.22)';
+                g.fillRect(cw * 0.33, ch * 0.28, 5, 5);
+                g.fillRect(cw * 0.63, ch * 0.68, 5, 5);
+            }, N);
+
             const floorGeo = new THREE.PlaneGeometry(size + 6, size + 6);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0b1226, roughness: 0.85, metalness: 0.2 });
+            const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.75, metalness: 0.3 });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             floor.position.y = -0.55;
             this.scene.add(floor);
 
-            const grid = new THREE.GridHelper(size, N, 0x4f46e5, 0x1e293b);
+            const grid = new THREE.GridHelper(size, N, 0x38bdf8, 0x1e293b);
             grid.position.y = -0.53;
             this.scene.add(grid);
 
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, emissive: 0x4338ca, emissiveIntensity: 0.9, roughness: 0.4 });
-            const wallGeoH = new THREE.BoxGeometry(size + 0.6, 0.5, 0.3);
-            const wallGeoV = new THREE.BoxGeometry(0.3, 0.5, size + 0.6);
-            const off = size / 2 + 0.15;
-            [[0, -off, wallGeoH], [0, off, wallGeoH], [-off, 0, wallGeoV], [off, 0, wallGeoV]].forEach(([x, z, g]) => {
+            // Neon Arena Perimeter & 4 Corner Pylons
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x312e81, emissive: 0x4338ca, emissiveIntensity: 0.85, roughness: 0.35, metalness: 0.4 });
+            const wallStripMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+            const wallGeoH = new THREE.BoxGeometry(size + 0.8, 0.55, 0.35);
+            const wallGeoV = new THREE.BoxGeometry(0.35, 0.55, size + 0.8);
+            const stripGeoH = new THREE.BoxGeometry(size + 0.82, 0.08, 0.38);
+            const stripGeoV = new THREE.BoxGeometry(0.38, 0.08, size + 0.82);
+            const off = size / 2 + 0.2;
+            [[0, -off, wallGeoH, stripGeoH], [0, off, wallGeoH, stripGeoH], [-off, 0, wallGeoV, stripGeoV], [off, 0, wallGeoV, stripGeoV]].forEach(([x, z, g, sg]) => {
                 const m = new THREE.Mesh(g, wallMat);
-                m.position.set(x, -0.2, z);
-                this.scene.add(m);
+                m.position.set(x, -0.22, z);
+                const s = new THREE.Mesh(sg, wallStripMat);
+                s.position.set(x, 0.08, z);
+                this.scene.add(m, s);
             });
 
+            const pylonGeo = new THREE.CylinderGeometry(0.42, 0.55, 1.8, 6);
+            const beaconGeo = new THREE.OctahedronGeometry(0.35);
+            [[-off, -off], [off, -off], [-off, off], [off, off]].forEach(([px, pz]) => {
+                const p = new THREE.Mesh(pylonGeo, wallMat);
+                p.position.set(px, 0.35, pz);
+                const b = new THREE.Mesh(beaconGeo, wallStripMat);
+                b.position.set(px, 1.55, pz);
+                this.scene.add(p, b);
+            });
+
+            // Obstacle tech texture for InstancedMesh
+            const obsTex = this.makeCanvasTex(64, 64, (g, cw, ch) => {
+                g.fillStyle = '#4c0519';
+                g.fillRect(0, 0, cw, ch);
+                g.strokeStyle = '#fb7185';
+                g.lineWidth = 3;
+                g.strokeRect(3, 3, cw - 6, ch - 6);
+                g.fillStyle = '#f43f5e';
+                g.fillRect(14, 14, cw - 28, ch - 28);
+                g.fillStyle = '#0f172a';
+                g.fillRect(22, 22, cw - 44, ch - 44);
+            });
+
+            // Shared Geometries for 3D Models
             this.geo = {
-                seg: new THREE.CylinderGeometry(0.66, 0.66, 1.18, 16),
-                obs: new THREE.BoxGeometry(1.35, 1.35, 1.35),
-                apple: new THREE.IcosahedronGeometry(0.6, 1),
-                patrol: new THREE.OctahedronGeometry(0.75),
-                hunter: new THREE.TetrahedronGeometry(0.85)
+                segCore: new THREE.CylinderGeometry(0.56, 0.56, 1.15, 10),
+                segRing: new THREE.TorusGeometry(0.58, 0.09, 6, 12),
+                headHull: new THREE.BoxGeometry(1.18, 0.72, 1.35),
+                headSnout: new THREE.ConeGeometry(0.66, 0.75, 4),
+                headEye: new THREE.BoxGeometry(0.22, 0.14, 0.28),
+                headCrest: new THREE.BoxGeometry(0.2, 0.25, 0.9),
+                obs: new THREE.BoxGeometry(1.36, 1.36, 1.36),
+                appleCore: new THREE.IcosahedronGeometry(0.5, 1),
+                appleRing: new THREE.TorusGeometry(0.78, 0.06, 8, 20),
+                patrolCore: new THREE.OctahedronGeometry(0.52),
+                patrolRing: new THREE.TorusGeometry(0.76, 0.08, 6, 16),
+                patrolFin: new THREE.BoxGeometry(1.5, 0.12, 0.28),
+                hunterBody: new THREE.ConeGeometry(0.68, 1.4, 4),
+                hunterWing: new THREE.BoxGeometry(1.45, 0.12, 0.5),
+                hunterEye: new THREE.SphereGeometry(0.24, 8, 8)
             };
-            const stdMat = (color, emissive, ei) => new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: ei, roughness: 0.3, metalness: 0.25 });
+            this.geo.segCore.rotateX(Math.PI / 2);
+            this.geo.headSnout.rotateX(Math.PI / 2);
+            this.geo.hunterBody.rotateX(Math.PI / 2);
+
+            const stdMat = (color, emissive, ei, extra = {}) => new THREE.MeshStandardMaterial({
+                color, emissive, emissiveIntensity: ei, roughness: 0.28, metalness: 0.35, ...extra
+            });
             this.mat = {
-                head: stdMat(0x67e8f9, 0x0891b2, 0.9),
+                head: stdMat(0x22d3ee, 0x0891b2, 0.85),
+                headDark: stdMat(0x0f172a, 0x1e293b, 0.3, { metalness: 0.7 }),
+                headEye: new THREE.MeshBasicMaterial({ color: 0xfef08a }),
                 body: [],
-                obs: stdMat(0xf43f5e, 0x9f1239, 0.6),
-                apple: stdMat(0x34d399, 0x059669, 1.0),
-                patrol: stdMat(0xa78bfa, 0x6d28d9, 0.9),
-                hunter: stdMat(0xfb923c, 0xc2410c, 0.9)
+                ring: stdMat(0x67e8f9, 0x06b6d4, 0.9),
+                obs: stdMat(0xffffff, 0xbe123c, 0.55, { map: obsTex }),
+                apple: stdMat(0x34d399, 0x10b981, 1.1),
+                appleRing: new THREE.MeshBasicMaterial({ color: 0x67e8f9 }),
+                patrol: stdMat(0xa78bfa, 0x6d28d9, 0.95),
+                patrolRing: stdMat(0x38bdf8, 0x0284c7, 0.85),
+                hunter: stdMat(0xfb923c, 0xc2410c, 0.95),
+                hunterEye: new THREE.MeshBasicMaterial({ color: 0xfef08a })
             };
             const c1 = new THREE.Color(0x22d3ee), c2 = new THREE.Color(0x6366f1);
             for (let i = 0; i < 12; i++) {
                 const c = c1.clone().lerp(c2, i / 11);
-                this.mat.body.push(stdMat(c, c.clone().multiplyScalar(0.55), 0.7));
+                this.mat.body.push(stdMat(c, c.clone().multiplyScalar(0.55), 0.72));
             }
-            [floorGeo, floorMat, wallMat, wallGeoH, wallGeoV, ...Object.values(this.geo),
-                this.mat.head, this.mat.obs, this.mat.apple, this.mat.patrol, this.mat.hunter, ...this.mat.body]
-                .forEach(d => this.disposables.push(d));
+            [floorGeo, floorMat, wallMat, wallStripMat, wallGeoH, wallGeoV, stripGeoH, stripGeoV, pylonGeo, beaconGeo,
+                ...Object.values(this.geo), ...Object.values(this.mat).flat()]
+                .forEach(d => { if (d && d.dispose) this.disposables.push(d); });
 
             this.obsGroup = new THREE.Group();
             this.scene.add(this.obsGroup);
-            this.appleMesh = new THREE.Mesh(this.geo.apple, this.mat.apple);
+
+            // Multi-part 3D Energy Orb (Core + 2 Holo Rings)
+            const appleGroup = new THREE.Group();
+            const aCore = new THREE.Mesh(this.geo.appleCore, this.mat.apple);
+            const aRing1 = new THREE.Mesh(this.geo.appleRing, this.mat.appleRing);
+            const aRing2 = new THREE.Mesh(this.geo.appleRing, this.mat.appleRing);
+            aRing1.rotation.x = Math.PI / 3;
+            aRing2.rotation.y = Math.PI / 3;
+            appleGroup.add(aCore, aRing1, aRing2);
+            appleGroup.userData = { ring1: aRing1, ring2: aRing2 };
+            this.appleMesh = appleGroup;
             this.scene.add(this.appleMesh);
 
             this.initParticles(500);
         }
 
+        createSnakeHeadMesh() {
+            const g = new THREE.Group();
+            const hull = new THREE.Mesh(this.geo.headHull, this.mat.head);
+            const snout = new THREE.Mesh(this.geo.headSnout, this.mat.head);
+            snout.position.set(0, -0.04, 0.9);
+            const crest = new THREE.Mesh(this.geo.headCrest, this.mat.headDark);
+            crest.position.set(0, 0.44, -0.08);
+            const eyeL = new THREE.Mesh(this.geo.headEye, this.mat.headEye);
+            eyeL.position.set(-0.46, 0.16, 0.48);
+            const eyeR = new THREE.Mesh(this.geo.headEye, this.mat.headEye);
+            eyeR.position.set(0.46, 0.16, 0.48);
+            g.add(hull, snout, crest, eyeL, eyeR);
+            return g;
+        }
+
+        createSnakeSegmentMesh(mat) {
+            const g = new THREE.Group();
+            const core = new THREE.Mesh(this.geo.segCore, mat);
+            const ring = new THREE.Mesh(this.geo.segRing, this.mat.ring);
+            g.add(core, ring);
+            g.userData = { core };
+            return g;
+        }
+
         rebuildEntityMeshes() {
             if (!this.scene) return;
             while (this.obsGroup.children.length) this.obsGroup.remove(this.obsGroup.children[0]);
-            this.obstacles.forEach(o => {
-                const m = new THREE.Mesh(this.geo.obs, this.mat.obs);
-                m.position.set(o.x * CELL, 0.1, o.z * CELL);
-                this.obsGroup.add(m);
-            });
+            if (this.obstacles.length > 0) {
+                const iMesh = new THREE.InstancedMesh(this.geo.obs, this.mat.obs, this.obstacles.length);
+                const dummy = new THREE.Object3D();
+                this.obstacles.forEach((o, i) => {
+                    dummy.position.set(o.x * CELL, 0.12, o.z * CELL);
+                    dummy.updateMatrix();
+                    iMesh.setMatrixAt(i, dummy.matrix);
+                });
+                iMesh.instanceMatrix.needsUpdate = true;
+                this.obsGroup.add(iMesh);
+            }
             this.snakeMeshes.forEach(m => this.scene.remove(m));
             this.snakeMeshes = [];
             this.rebuildEnemyMeshes();
@@ -1259,9 +1387,25 @@
             this.enemyMeshes.forEach(m => this.scene.remove(m.mesh));
             this.enemyMeshes = this.enemies.map(e => {
                 const hunter = e.type === 'hunter';
-                const mesh = new THREE.Mesh(hunter ? this.geo.hunter : this.geo.patrol, hunter ? this.mat.hunter : this.mat.patrol);
-                this.scene.add(mesh);
-                return { enemy: e, mesh };
+                const g = new THREE.Group();
+                if (hunter) {
+                    const body = new THREE.Mesh(this.geo.hunterBody, this.mat.hunter);
+                    const wing = new THREE.Mesh(this.geo.hunterWing, this.mat.headDark);
+                    wing.position.set(0, 0, -0.15);
+                    const eye = new THREE.Mesh(this.geo.hunterEye, this.mat.hunterEye);
+                    eye.position.set(0, 0.16, 0.25);
+                    g.add(body, wing, eye);
+                    g.userData = { hunter: true };
+                } else {
+                    const core = new THREE.Mesh(this.geo.patrolCore, this.mat.patrol);
+                    const ring = new THREE.Mesh(this.geo.patrolRing, this.mat.patrolRing);
+                    ring.rotation.x = Math.PI / 2;
+                    const fin = new THREE.Mesh(this.geo.patrolFin, this.mat.headDark);
+                    g.add(core, ring, fin);
+                    g.userData = { hunter: false, ring };
+                }
+                this.scene.add(g);
+                return { enemy: e, mesh: g };
             });
         }
 
@@ -1368,7 +1512,10 @@
             const intro = this.state === 'intro' ? easeOut(this.introT / INTRO_DURATION) : 1;
 
             while (this.snakeMeshes.length < this.snake.length) {
-                const m = new THREE.Mesh(this.geo.seg, this.mat.head);
+                const idx = this.snakeMeshes.length;
+                const m = idx === 0
+                    ? this.createSnakeHeadMesh()
+                    : this.createSnakeSegmentMesh(this.mat.body[Math.min(idx - 1, 11)]);
                 this.scene.add(m);
                 this.snakeMeshes.push(m);
             }
@@ -1378,9 +1525,23 @@
             this.snake.forEach((s, i) => {
                 const p = this.prevSnake[i] || tail || s;
                 const m = this.snakeMeshes[i];
-                m.position.set(lerp(p.x, s.x) * CELL, 0.1, lerp(p.z, s.z) * CELL);
-                m.material = i === 0 ? this.mat.head : this.mat.body[Math.min(i - 1, 11)];
-                const sc = (i === 0 ? 1 + this.headPulse * 0.35 : 1 - Math.min(i, 12) * 0.012) * intro;
+                const wx = lerp(p.x, s.x) * CELL;
+                const wz = lerp(p.z, s.z) * CELL;
+                m.position.set(wx, 0.14, wz);
+                if (i === 0) {
+                    m.rotation.y = Math.atan2(this.dir.x, this.dir.z);
+                } else {
+                    if (m.userData && m.userData.core) {
+                        m.userData.core.material = this.mat.body[Math.min(i - 1, 11)];
+                    }
+                    const front = this.snakeMeshes[i - 1];
+                    if (front) {
+                        const dx = front.position.x - wx;
+                        const dz = front.position.z - wz;
+                        if (dx * dx + dz * dz > 1e-4) m.rotation.y = Math.atan2(dx, dz);
+                    }
+                }
+                const sc = (i === 0 ? 1 + this.headPulse * 0.35 : Math.max(0.55, 1 - Math.min(i, 16) * 0.018)) * intro;
                 m.scale.setScalar(Math.max(0.001, sc));
                 m.visible = !blink;
             });
@@ -1388,17 +1549,30 @@
             if (h) this.headLight.position.set(h.position.x, 2.5, h.position.z);
 
             this.enemyMeshes.forEach(({ enemy: e, mesh }) => {
-                mesh.position.set(lerp(e.px, e.x) * CELL, 0.2 + Math.sin(now / 250 + e.x) * 0.15, lerp(e.pz, e.z) * CELL);
-                mesh.rotation.y += dt * 2.5;
-                mesh.rotation.x += dt * 1.2;
+                const ex = lerp(e.px, e.x) * CELL;
+                const ez = lerp(e.pz, e.z) * CELL;
+                mesh.position.set(ex, 0.28 + Math.sin(now / 250 + e.x) * 0.16, ez);
+                if (mesh.userData && mesh.userData.hunter && h) {
+                    mesh.rotation.y = Math.atan2(h.position.x - ex, h.position.z - ez);
+                } else {
+                    mesh.rotation.y += dt * 2.5;
+                    if (mesh.userData && mesh.userData.ring) {
+                        mesh.userData.ring.rotation.y += dt * 4.5;
+                        mesh.userData.ring.rotation.x = Math.PI / 2 + Math.sin(now / 300) * 0.35;
+                    }
+                }
                 mesh.scale.setScalar(Math.max(0.001, intro));
             });
 
             this.obsGroup.scale.set(1, Math.max(0.001, intro), 1);
             this.appleMesh.visible = !!this.apple;
             if (this.apple) {
-                this.appleMesh.position.set(this.apple.x * CELL, 0.2 + Math.sin(now / 300) * 0.15, this.apple.z * CELL);
-                this.appleMesh.rotation.y += dt * 2;
+                this.appleMesh.position.set(this.apple.x * CELL, 0.25 + Math.sin(now / 300) * 0.16, this.apple.z * CELL);
+                this.appleMesh.rotation.y += dt * 2.2;
+                if (this.appleMesh.userData && this.appleMesh.userData.ring1) {
+                    this.appleMesh.userData.ring1.rotation.z += dt * 3.2;
+                    this.appleMesh.userData.ring2.rotation.x -= dt * 2.8;
+                }
                 this.appleMesh.scale.setScalar(Math.max(0.001, intro) * (1 + Math.sin(now / 200) * 0.06));
             }
 

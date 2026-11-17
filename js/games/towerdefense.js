@@ -130,6 +130,11 @@ window.TowerDefenseGame = class {
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'game-canvas';
         this.ctx = this.canvas.getContext('2d');
+        if (this.ctx) {
+            for (const m of ['closePath', 'translate', 'rotate', 'scale', 'ellipse', 'setTransform']) {
+                if (!this.ctx[m]) this.ctx[m] = () => {};
+            }
+        }
         this.container.appendChild(this.canvas);
 
         this.buildUI();
@@ -441,6 +446,91 @@ window.TowerDefenseGame = class {
             return { x: (cx + 0.5) * this.CELL, y: (cy + 0.5) * this.CELL, cx, cy };
         }).filter(r => !this.isNearPath(r.x, r.y, this.PATH_CLEAR + 4));
         this.spotCache = null;
+        this.buildMapCache();
+    }
+
+    buildMapCache() {
+        if (this.headless || typeof document === 'undefined' || !document.createElement) return;
+        const W = this.W, H = this.H;
+        const bg = document.createElement('canvas');
+        bg.width = W; bg.height = H;
+        const g = bg.getContext('2d');
+        if (!g || !g.closePath || !g.createLinearGradient) return;
+
+        g.fillStyle = '#090e1c';
+        g.fillRect(0, 0, W, H);
+
+        // Tactical cyber grid + intersection nodes
+        g.fillStyle = 'rgba(148, 163, 184, 0.06)';
+        for (let x = 0; x < W; x += this.CELL) g.fillRect(x, 0, 1, H);
+        for (let y = 0; y < H; y += this.CELL) g.fillRect(0, y, W, 1);
+        g.fillStyle = 'rgba(56, 189, 248, 0.14)';
+        for (let x = this.CELL; x < W; x += this.CELL) {
+            for (let y = this.CELL; y < H; y += this.CELL) {
+                g.fillRect(x - 1, y - 1, 2, 2);
+            }
+        }
+
+        // Layered Armored Road Path (replaces expensive per-frame shadowBlur)
+        g.save();
+        g.lineCap = 'round';
+        g.lineJoin = 'round';
+        const trace = () => {
+            g.beginPath();
+            this.waypoints.forEach((pt, i) => (i === 0 ? g.moveTo(pt.x, pt.y) : g.lineTo(pt.x, pt.y)));
+        };
+        g.strokeStyle = 'rgba(99, 102, 241, 0.16)';
+        g.lineWidth = 48;
+        trace(); g.stroke();
+        g.strokeStyle = '#312e81';
+        g.lineWidth = 38;
+        trace(); g.stroke();
+        g.strokeStyle = '#111827';
+        g.lineWidth = 30;
+        trace(); g.stroke();
+
+        // Center directional lane dashes
+        if (g.setLineDash) g.setLineDash([8, 12]);
+        g.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+        g.lineWidth = 2;
+        trace(); g.stroke();
+        if (g.setLineDash) g.setLineDash([]);
+        g.restore();
+
+        // 2.5D Faceted Rocks / Crystal Obstacles
+        for (const r of this.rocks) {
+            const x = r.x, y = r.y;
+            g.fillStyle = 'rgba(2, 6, 23, 0.55)';
+            g.beginPath();
+            g.moveTo(x - 12, y + 14); g.lineTo(x + 15, y + 14); g.lineTo(x + 16, y - 4);
+            g.lineTo(x + 4, y - 13); g.lineTo(x - 14, y - 4);
+            g.closePath();
+            g.fill();
+
+            g.fillStyle = '#1e293b';
+            g.strokeStyle = '#475569';
+            g.lineWidth = 1.2;
+            g.beginPath();
+            g.moveTo(x - 13, y + 10); g.lineTo(x + 12, y + 11); g.lineTo(x + 14, y - 5);
+            g.lineTo(x + 2, y - 14); g.lineTo(x - 13, y - 6);
+            g.closePath();
+            g.fill(); g.stroke();
+
+            // Upper lit facet
+            g.fillStyle = '#334155';
+            g.beginPath();
+            g.moveTo(x - 11, y - 5); g.lineTo(x + 2, y - 13); g.lineTo(x + 11, y - 4); g.lineTo(x, y + 2);
+            g.closePath();
+            g.fill();
+            // Energy crystal vein
+            g.fillStyle = 'rgba(56, 189, 248, 0.45)';
+            g.beginPath();
+            g.moveTo(x - 2, y - 5); g.lineTo(x + 4, y - 1); g.lineTo(x + 1, y + 5); g.lineTo(x - 4, y + 1);
+            g.closePath();
+            g.fill();
+        }
+
+        this.bgCanvas = bg;
     }
 
     segmentsIntersect(a, b, c, d) {
@@ -656,7 +746,7 @@ window.TowerDefenseGame = class {
             speed: t.speed * d.speedMul * (0.95 + rand() * 0.1),
             reward: Math.round((typeKey === 'boss' ? t.reward : (8 + this.wave * 1.5) * t.reward) * d.rewardMul),
             points: t.points, path, seg: 0, travelled: 0, slowTimer: 0, flash: 0, dead: false,
-            x: path[0].x, y: path[0].y
+            x: path[0].x, y: path[0].y, angle: 0
         };
     }
 
@@ -831,6 +921,7 @@ window.TowerDefenseGame = class {
             if (!tgt) return true;
             const dx = tgt.x - en.x, dy = tgt.y - en.y;
             const d = Math.hypot(dx, dy);
+            if (d > 1e-4) en.angle = Math.atan2(dy, dx);
             if (d <= dist) {
                 en.x = tgt.x; en.y = tgt.y; en.seg++;
                 en.travelled += d; dist -= d;
@@ -857,6 +948,7 @@ window.TowerDefenseGame = class {
 
     updateTurrets(dt) {
         for (const t of this.turrets) {
+            if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 8);
             t.cooldown -= dt;
             if (t.cooldown > 0) continue;
             let target = null;
@@ -867,6 +959,7 @@ window.TowerDefenseGame = class {
             if (!target) continue;
             t.cooldown = t.rate;
             t.angle = Math.atan2(target.y - t.y, target.x - t.x);
+            t.recoil = 1;
             this.stats.shots++;
             this.projectiles.push({
                 x: t.x + Math.cos(t.angle) * 14, y: t.y + Math.sin(t.angle) * 14, target,
@@ -1014,40 +1107,55 @@ window.TowerDefenseGame = class {
         const W = this.canvas.width, H = this.canvas.height;
         ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
-        ctx.fillStyle = '#0b1020';
-        ctx.fillRect(0, 0, W, H);
 
-        // Raster
-        ctx.fillStyle = 'rgba(148,163,184,0.06)';
-        for (let x = 0; x < W; x += this.CELL) ctx.fillRect(x, 0, 1, H);
-        for (let y = 0; y < H; y += this.CELL) ctx.fillRect(0, y, W, 1);
+        if (this.bgCanvas && ctx.drawImage) {
+            ctx.drawImage(this.bgCanvas, 0, 0);
+        } else {
+            ctx.fillStyle = '#0b1020';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = 'rgba(148,163,184,0.06)';
+            for (let x = 0; x < W; x += this.CELL) ctx.fillRect(x, 0, 1, H);
+            for (let y = 0; y < H; y += this.CELL) ctx.fillRect(0, y, W, 1);
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            const trace = () => {
+                ctx.beginPath();
+                this.waypoints.forEach((pt, i) => (i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
+            };
+            ctx.strokeStyle = '#312e81';
+            ctx.lineWidth = 40;
+            trace(); ctx.stroke();
+            ctx.strokeStyle = '#111827';
+            ctx.lineWidth = 32;
+            trace(); ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1;
+            for (const r of this.rocks) {
+                ctx.fillRect(r.x - 13, r.y - 13, 26, 26);
+                ctx.strokeRect(r.x - 13, r.y - 13, 26, 26);
+            }
+        }
 
-        // Pfad
-        ctx.save();
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        const trace = () => {
-            ctx.beginPath();
-            this.waypoints.forEach((pt, i) => (i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
-        };
-        ctx.shadowColor = '#6366f1';
-        ctx.shadowBlur = 18;
-        ctx.strokeStyle = '#312e81';
-        ctx.lineWidth = 40;
-        trace(); ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = '#111827';
-        ctx.lineWidth = 32;
-        trace(); ctx.stroke();
-        ctx.restore();
+        // Animated Spawn & Core Portals at Path Endpoints
+        if (this.waypoints.length >= 2) {
+            const sp = this.waypoints[0];
+            const ep = this.waypoints[this.waypoints.length - 1];
+            const sx = Math.max(16, sp.x), sy = sp.y;
+            const ex = Math.min(W - 16, ep.x), ey = ep.y;
+            const pulse = 14 + Math.sin(this.time * 4) * 3;
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+            ctx.beginPath(); ctx.arc(sx, sy, pulse + 6, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(sx, sy, pulse, 0, Math.PI * 2); ctx.stroke();
 
-        // Hindernisse
-        ctx.fillStyle = '#1e293b';
-        ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 1;
-        for (const r of this.rocks) {
-            ctx.fillRect(r.x - 13, r.y - 13, 26, 26);
-            ctx.strokeRect(r.x - 13, r.y - 13, 26, 26);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.beginPath(); ctx.arc(ex, ey, pulse + 6, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.beginPath(); ctx.arc(ex, ey, pulse, 0, Math.PI * 2); ctx.stroke();
+            ctx.lineWidth = 1;
         }
 
         // Bauvorschau
@@ -1057,7 +1165,7 @@ window.TowerDefenseGame = class {
             const ok = existing || this.isBuildable(s.x, s.y);
             const info = this.towerTypes[this.selectedTowerType];
             ctx.save();
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.55;
             ctx.strokeStyle = ok ? info.color : '#ef4444';
             ctx.fillStyle = ok ? 'rgba(99,102,241,0.12)' : 'rgba(239,68,68,0.15)';
             ctx.beginPath();
@@ -1066,81 +1174,47 @@ window.TowerDefenseGame = class {
             ctx.restore();
         }
 
-        // Türme
-        for (const t of this.turrets) {
-            ctx.save();
-            ctx.shadowColor = t.color;
-            ctx.shadowBlur = 12;
-            ctx.fillStyle = '#0f172a';
-            ctx.beginPath(); ctx.arc(t.x, t.y, 15, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = t.color;
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(t.x, t.y);
-            ctx.lineTo(t.x + Math.cos(t.angle) * 16, t.y + Math.sin(t.angle) * 16);
-            ctx.stroke();
-            ctx.fillStyle = t.color;
-            ctx.beginPath(); ctx.arc(t.x, t.y, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#fbbf24';
-            for (let i = 1; i < t.level; i++) ctx.fillRect(t.x - 12 + (i - 1) * 6, t.y + 18, 4, 3);
-            ctx.restore();
-        }
+        // 2.5D Turrets
+        for (const t of this.turrets) this.drawTurret(ctx, t);
 
-        // Gegner
-        for (const en of this.enemies) {
-            ctx.save();
-            const col = en.flash > 0 ? '#ffffff' : (en.slowTimer > 0 ? '#38bdf8' : en.color);
-            ctx.shadowColor = col;
-            ctx.shadowBlur = en.type === 'boss' ? 20 : 8;
-            ctx.fillStyle = col;
-            const r = en.radius;
-            ctx.beginPath();
-            if (en.type === 'runner') {
-                ctx.moveTo(en.x, en.y - r); ctx.lineTo(en.x + r, en.y); ctx.lineTo(en.x, en.y + r); ctx.lineTo(en.x - r, en.y);
-            } else if (en.type === 'tank') {
-                ctx.moveTo(en.x - r, en.y - r); ctx.lineTo(en.x + r, en.y - r); ctx.lineTo(en.x + r, en.y + r); ctx.lineTo(en.x - r, en.y + r);
-            } else if (en.type === 'flyer') {
-                ctx.moveTo(en.x, en.y - r); ctx.lineTo(en.x + r, en.y + r * 0.8); ctx.lineTo(en.x - r, en.y + r * 0.8);
-            } else {
-                ctx.arc(en.x, en.y, r, 0, Math.PI * 2);
-            }
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            if (en.type === 'boss') {
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(en.x, en.y, r - 5, 0, Math.PI * 2); ctx.stroke();
-            }
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(en.x - r, en.y - r - 8, r * 2, 3);
-            ctx.fillStyle = '#10b981';
-            ctx.fillRect(en.x - r, en.y - r - 8, r * 2 * Math.max(0, en.hp / en.maxHp), 3);
-            ctx.restore();
-        }
+        // 2.5D Enemies
+        for (const en of this.enemies) this.drawEnemy(ctx, en);
 
-        // Projektile
+        // Glowing Projectiles (no shadowBlur)
         for (const p of this.projectiles) {
-            ctx.save();
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 10;
+            ctx.globalAlpha = 0.35;
             ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
+            ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3.6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
         }
 
-        // Tesla-Blitze
+        // Jagged Tesla Lightning Arcs
         for (const b of this.beams) {
             ctx.save();
+            const alpha = Math.max(0, b.life / 0.15);
+            ctx.globalAlpha = alpha * 0.45;
             ctx.strokeStyle = b.color;
-            ctx.shadowColor = b.color;
-            ctx.shadowBlur = 12;
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = Math.max(0, b.life / 0.15);
+            ctx.lineWidth = 5;
             ctx.beginPath();
             b.pts.forEach((pt, i) => (i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
+            ctx.stroke();
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = '#e0f2fe';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            b.pts.forEach((pt, i) => {
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                else {
+                    const prev = b.pts[i - 1];
+                    const mx = (prev.x + pt.x) / 2 + (Math.random() - 0.5) * 10;
+                    const my = (prev.y + pt.y) / 2 + (Math.random() - 0.5) * 10;
+                    ctx.lineTo(mx, my);
+                    ctx.lineTo(pt.x, pt.y);
+                }
+            });
             ctx.stroke();
             ctx.restore();
         }
@@ -1152,6 +1226,157 @@ window.TowerDefenseGame = class {
             ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
         }
         ctx.globalAlpha = 1;
+    }
+
+    drawTurret(ctx, t) {
+        ctx.save();
+        ctx.translate(t.x, t.y);
+
+        // Drop shadow & Octagonal Base Pad
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+        ctx.beginPath(); ctx.arc(1.5, 3, 17, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = t.color;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) {
+            const a = k * Math.PI / 4 + Math.PI / 8;
+            const px = Math.cos(a) * 16, py = Math.sin(a) * 16;
+            if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Rotating Weapon Mount
+        ctx.save();
+        ctx.rotate(t.angle || 0);
+        const rec = -(t.recoil || 0) * 3;
+        if (t.type === 'blaster') {
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(4 + rec, -5, 15, 3.5);
+            ctx.fillRect(4 + rec, 1.5, 15, 3.5);
+            ctx.fillStyle = t.color;
+            ctx.beginPath(); ctx.arc(0, 0, 8.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#e0f2fe';
+            ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+        } else if (t.type === 'plasma') {
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(2 + rec, -7, 16, 4);
+            ctx.fillRect(2 + rec, 3, 16, 4);
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(6 + rec, -2, 10, 4);
+            ctx.fillStyle = t.color;
+            ctx.beginPath(); ctx.arc(0, 0, 9.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+        } else if (t.type === 'cryo') {
+            ctx.rotate(this.time * 1.8);
+            ctx.strokeStyle = '#67e8f9';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+                const a = k * Math.PI / 3;
+                ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11);
+            }
+            ctx.stroke();
+            ctx.fillStyle = t.color;
+            ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+        } else {
+            // Tesla Coil
+            ctx.strokeStyle = '#c084fc';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = t.color;
+            ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#f5d0fe';
+            ctx.beginPath(); ctx.arc(0, 0, 3.5 + Math.sin(this.time * 14) * 0.8, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+
+        // Level upgrade pips
+        ctx.fillStyle = '#fbbf24';
+        for (let i = 1; i < t.level; i++) ctx.fillRect(-10 + (i - 1) * 5.5, 17, 4, 3);
+        ctx.restore();
+    }
+
+    drawEnemy(ctx, en) {
+        const r = en.radius;
+        const col = en.flash > 0 ? '#ffffff' : (en.slowTimer > 0 ? '#38bdf8' : en.color);
+
+        // Ground shadow (further offset for flyers)
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.5)';
+        ctx.beginPath();
+        ctx.arc(en.x + (en.flying ? 7 : 2), en.y + (en.flying ? 11 : 3), r * (en.flying ? 0.8 : 1), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(en.x, en.y);
+        ctx.rotate(en.angle || 0);
+
+        // Subtle glow halo (fast alpha circle instead of shadowBlur)
+        ctx.fillStyle = col;
+        ctx.globalAlpha = 0.22;
+        ctx.beginPath(); ctx.arc(0, 0, r + 4, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        if (en.type === 'runner') {
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(r + 2, 0); ctx.lineTo(-r, -r * 0.85); ctx.lineTo(-r * 0.4, 0); ctx.lineTo(-r, r * 0.85);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(0, -2, r * 0.5, 4);
+        } else if (en.type === 'tank') {
+            // Treads
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-r, -r * 0.95, r * 2, r * 0.35);
+            ctx.fillRect(-r, r * 0.6, r * 2, r * 0.35);
+            // Hull + Cannon
+            ctx.fillStyle = col;
+            ctx.fillRect(-r * 0.85, -r * 0.65, r * 1.7, r * 1.3);
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(0, -2, r * 1.05, 4);
+        } else if (en.type === 'flyer') {
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(r + 2, 0); ctx.lineTo(-r * 0.5, -r * 1.1); ctx.lineTo(-r, 0); ctx.lineTo(-r * 0.5, r * 1.1);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fae8ff';
+            ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.3, 0, Math.PI * 2); ctx.fill();
+        } else if (en.type === 'boss') {
+            // Dreadnought Hex Chassis + Spinning Reactor Core
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+                const a = k * Math.PI / 3;
+                const px = Math.cos(a) * r, py = Math.sin(a) * r;
+                if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#fbcfe8'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2); ctx.fill();
+        } else {
+            // Grunt Cyber Walker
+            ctx.fillStyle = col;
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(r * 0.1, -3, r * 0.55, 6);
+        }
+        ctx.restore();
+
+        // Crisp Health Bar (unrotated)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(en.x - r, en.y - r - 9, r * 2, 3.5);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(en.x - r, en.y - r - 9, r * 2 * Math.max(0, en.hp / en.maxHp), 3.5);
     }
 
     /* ------------------------------------------------------------------ */

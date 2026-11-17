@@ -234,6 +234,14 @@ window.SpaceShooterGame = class {
         this.canvas.className = 'game-canvas';
         this.canvas.style.touchAction = 'none';
         this.ctx = this.canvas.getContext('2d');
+        if (this.ctx) {
+            for (const m of ['closePath', 'translate', 'rotate', 'scale', 'ellipse', 'setTransform']) {
+                if (!this.ctx[m]) this.ctx[m] = () => {};
+            }
+            for (const g of ['createLinearGradient', 'createRadialGradient']) {
+                if (!this.ctx[g]) this.ctx[g] = () => ({ addColorStop() {} });
+            }
+        }
         this.container.appendChild(this.canvas);
 
         this.buildUI();
@@ -453,6 +461,58 @@ window.SpaceShooterGame = class {
         const scale = Math.min(w / G.WORLD_W, availH / G.WORLD_H);
         this.view = { scale, ox: (w - G.WORLD_W * scale) / 2, oy: G.HUD_H + (availH - G.WORLD_H * scale) / 2 };
         this.initStars();
+        this.buildBgCache(this.canvas.width, this.canvas.height);
+    }
+
+    buildBgCache(cw, ch) {
+        if (typeof document === 'undefined' || !document.createElement) return;
+        const G = window.SpaceShooterGame;
+        const v = this.view;
+        const bg = document.createElement('canvas');
+        bg.width = cw; bg.height = ch;
+        const g = bg.getContext('2d');
+        if (!g || !g.createLinearGradient) return;
+
+        const grad = g.createLinearGradient(0, 0, 0, ch);
+        grad.addColorStop(0, '#020617');
+        grad.addColorStop(0.6, '#0b1230');
+        grad.addColorStop(1, '#1e1b4b');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, cw, ch);
+
+        g.setTransform(v.scale, 0, 0, v.scale, v.ox, v.oy);
+        if (g.createRadialGradient) {
+            const neb1 = g.createRadialGradient(G.WORLD_W * 0.75, G.WORLD_H * 0.25, 10, G.WORLD_W * 0.75, G.WORLD_H * 0.25, 320);
+            neb1.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+            neb1.addColorStop(1, 'rgba(99, 102, 241, 0)');
+            g.fillStyle = neb1;
+            g.fillRect(0, 0, G.WORLD_W, G.WORLD_H);
+
+            const neb2 = g.createRadialGradient(G.WORLD_W * 0.2, G.WORLD_H * 0.72, 10, G.WORLD_W * 0.2, G.WORLD_H * 0.72, 260);
+            neb2.addColorStop(0, 'rgba(6, 182, 212, 0.14)');
+            neb2.addColorStop(1, 'rgba(6, 182, 212, 0)');
+            g.fillStyle = neb2;
+            g.fillRect(0, 0, G.WORLD_W, G.WORLD_H);
+
+            // Distant Ringed Exoplanet
+            const px = G.WORLD_W * 0.8, py = G.WORLD_H * 0.22;
+            const pg = g.createRadialGradient(px - 14, py - 14, 6, px, py, 52);
+            pg.addColorStop(0, 'rgba(129, 140, 248, 0.45)');
+            pg.addColorStop(0.7, 'rgba(49, 46, 129, 0.35)');
+            pg.addColorStop(1, 'rgba(15, 23, 42, 0.1)');
+            g.fillStyle = pg;
+            g.beginPath(); g.arc(px, py, 48, 0, Math.PI * 2); g.fill();
+
+            if (g.ellipse) {
+                g.strokeStyle = 'rgba(165, 180, 252, 0.32)';
+                g.lineWidth = 4;
+                g.beginPath();
+                g.ellipse(px, py, 78, 18, -0.32, 0, Math.PI * 2);
+                g.stroke();
+            }
+        }
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        this.bgCanvas = bg;
     }
 
     initStars() {
@@ -911,22 +971,20 @@ window.SpaceShooterGame = class {
         const v = this.view;
 
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const bg = ctx.createLinearGradient(0, 0, 0, ch);
-        bg.addColorStop(0, '#020617');
-        bg.addColorStop(0.6, '#0b1230');
-        bg.addColorStop(1, '#1e1b4b');
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, cw, ch);
+        if (this.bgCanvas && ctx.drawImage) {
+            ctx.drawImage(this.bgCanvas, 0, 0);
+        } else {
+            const bg = ctx.createLinearGradient(0, 0, 0, ch);
+            bg.addColorStop(0, '#020617');
+            bg.addColorStop(0.6, '#0b1230');
+            bg.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, cw, ch);
+        }
 
         const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0;
         const sy = this.shake ? (Math.random() - 0.5) * this.shake : 0;
         ctx.setTransform(v.scale, 0, 0, v.scale, v.ox + sx * v.scale, v.oy + sy * v.scale);
-
-        const neb = ctx.createRadialGradient(G.WORLD_W * 0.75, G.WORLD_H * 0.25, 10, G.WORLD_W * 0.75, G.WORLD_H * 0.25, 320);
-        neb.addColorStop(0, 'rgba(99,102,241,0.22)');
-        neb.addColorStop(1, 'rgba(99,102,241,0)');
-        ctx.fillStyle = neb;
-        ctx.fillRect(0, 0, G.WORLD_W, G.WORLD_H);
 
         ctx.fillStyle = '#e2e8f0';
         for (const s of this.stars) {
@@ -975,73 +1033,189 @@ window.SpaceShooterGame = class {
         if (p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0) return;
         ctx.save();
         ctx.translate(p.x, p.y);
-        ctx.shadowColor = '#22d3ee';
-        ctx.shadowBlur = 14;
+
+        // Twin Afterburner Thruster Flames
+        const fl = 9 + Math.random() * 6;
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.55)';
+        ctx.beginPath();
+        ctx.moveTo(-9, p.h * 0.38); ctx.lineTo(-6, p.h * 0.45 + fl); ctx.lineTo(-3, p.h * 0.38);
+        ctx.moveTo(3, p.h * 0.38); ctx.lineTo(6, p.h * 0.45 + fl); ctx.lineTo(9, p.h * 0.38);
+        ctx.fill();
+        ctx.fillStyle = '#e0f2fe';
+        ctx.beginPath();
+        ctx.moveTo(-7.5, p.h * 0.38); ctx.lineTo(-6, p.h * 0.38 + fl * 0.55); ctx.lineTo(-4.5, p.h * 0.38);
+        ctx.moveTo(4.5, p.h * 0.38); ctx.lineTo(6, p.h * 0.38 + fl * 0.55); ctx.lineTo(7.5, p.h * 0.38);
+        ctx.fill();
+
+        // Outer Wing Pods (scale visually with weaponLevel)
+        if (p.weaponLevel >= 2) {
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(-p.w * 0.52, -2, 3, 12);
+            ctx.fillRect(p.w * 0.52 - 3, -2, 3, 12);
+        }
+
+        // Swept Starfighter Hull
         const g = ctx.createLinearGradient(0, -p.h / 2, 0, p.h / 2);
         g.addColorStop(0, '#f8fafc');
-        g.addColorStop(1, '#6366f1');
+        g.addColorStop(0.55, '#818cf8');
+        g.addColorStop(1, '#312e81');
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.moveTo(0, -p.h / 2);
-        ctx.lineTo(p.w / 2, p.h / 2);
-        ctx.lineTo(0, p.h / 4);
-        ctx.lineTo(-p.w / 2, p.h / 2);
+        ctx.moveTo(0, -p.h * 0.58);
+        ctx.lineTo(p.w * 0.22, -p.h * 0.1);
+        ctx.lineTo(p.w * 0.62, p.h * 0.35);
+        ctx.lineTo(p.w * 0.48, p.h * 0.48);
+        ctx.lineTo(p.w * 0.16, p.h * 0.25);
+        ctx.lineTo(0, p.h * 0.42);
+        ctx.lineTo(-p.w * 0.16, p.h * 0.25);
+        ctx.lineTo(-p.w * 0.48, p.h * 0.48);
+        ctx.lineTo(-p.w * 0.62, p.h * 0.35);
+        ctx.lineTo(-p.w * 0.22, -p.h * 0.1);
         ctx.closePath();
         ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#22d3ee';
-        ctx.beginPath(); ctx.arc(0, -2, 3.2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#bae6fd';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Cockpit Canopy & Hitbox Core
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.moveTo(0, -p.h * 0.3);
+        ctx.lineTo(4.2, 1);
+        ctx.lineTo(0, 5);
+        ctx.lineTo(-4.2, 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ecfeff';
+        ctx.beginPath(); ctx.arc(0, -2, 2.2, 0, Math.PI * 2); ctx.fill();
+
+        if (p.invuln > 0) {
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, 0, p.w * 0.85, 0, Math.PI * 2); ctx.stroke();
+        }
         ctx.restore();
     }
 
     drawEnemy(ctx, en) {
         ctx.save();
         ctx.translate(en.x, en.y);
-        ctx.shadowColor = en.color;
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = en.flash > 0 ? '#ffffff' : en.color;
-        ctx.beginPath();
+        const col = en.flash > 0 ? '#ffffff' : en.color;
+        const r = en.r;
+
+        // Fast glow halo
+        ctx.fillStyle = col;
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath(); ctx.arc(0, 0, r + 4, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = col;
         if (en.type === 'weaver') {
-            ctx.moveTo(0, en.r); ctx.lineTo(en.r, -en.r * 0.6); ctx.lineTo(0, -en.r * 0.2); ctx.lineTo(-en.r, -en.r * 0.6);
+            // Crescent Interceptor
+            ctx.beginPath();
+            ctx.moveTo(0, r * 1.1);
+            ctx.lineTo(r * 1.15, -r * 0.65);
+            ctx.lineTo(r * 0.45, -r * 0.25);
+            ctx.lineTo(0, -r * 0.75);
+            ctx.lineTo(-r * 0.45, -r * 0.25);
+            ctx.lineTo(-r * 1.15, -r * 0.65);
+            ctx.closePath();
+            ctx.fill();
         } else if (en.type === 'shooter') {
-            for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + Math.PI / 6; ctx.lineTo(Math.cos(a) * en.r, Math.sin(a) * en.r); }
+            // Hex Plasma Cruiser
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const a = i * Math.PI / 3 + Math.PI / 6;
+                const rad = i % 2 === 0 ? r * 1.05 : r * 0.85;
+                if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+                else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+            }
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-r * 0.75, -2, r * 1.5, 4);
         } else if (en.type === 'tank') {
-            ctx.rect(-en.r, -en.r * 0.75, en.r * 2, en.r * 1.5);
+            // Armored Heavy Corvette
+            ctx.fillRect(-r, -r * 0.75, r * 2, r * 1.4);
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-r * 0.85, -r * 0.55, r * 1.7, r * 0.9);
+            ctx.fillStyle = col;
+            ctx.fillRect(-r * 0.35, 0, r * 0.7, r * 0.85);
         } else {
-            ctx.arc(0, 0, en.r, 0, Math.PI * 2);
+            // Twin-Claw Grunt Fighter
+            ctx.beginPath();
+            ctx.moveTo(0, r);
+            ctx.lineTo(r * 0.95, -r * 0.2);
+            ctx.lineTo(r * 0.65, -r * 0.85);
+            ctx.lineTo(r * 0.2, -r * 0.35);
+            ctx.lineTo(-r * 0.2, -r * 0.35);
+            ctx.lineTo(-r * 0.65, -r * 0.85);
+            ctx.lineTo(-r * 0.95, -r * 0.2);
+            ctx.closePath();
+            ctx.fill();
         }
-        ctx.closePath();
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = 'rgba(15,23,42,0.75)';
-        ctx.beginPath(); ctx.arc(0, 0, en.r * 0.35, 0, Math.PI * 2); ctx.fill();
+
+        // Glowing Alien Cockpit Eye
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.38, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath(); ctx.arc(0, 1, r * 0.18, 0, Math.PI * 2); ctx.fill();
+
         if (en.type === 'tank' && en.hp < en.maxHp) {
             ctx.fillStyle = '#22c55e';
-            ctx.fillRect(-en.r, -en.r - 6, en.r * 2 * (en.hp / en.maxHp), 3);
+            ctx.fillRect(-r, -r - 6, r * 2 * (en.hp / en.maxHp), 3);
         }
         ctx.restore();
     }
 
     drawBoss(ctx, b) {
         ctx.save();
-        ctx.shadowColor = '#8b5cf6';
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = b.flash > 0 ? '#ffffff' : '#7c3aed';
+        const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+
+        // Aura glow
+        ctx.fillStyle = 'rgba(139, 92, 246, 0.2)';
         ctx.beginPath();
-        ctx.moveTo(b.x, b.y + 14);
-        ctx.lineTo(b.x + b.w * 0.5, b.y);
-        ctx.lineTo(b.x + b.w, b.y + 14);
-        ctx.lineTo(b.x + b.w * 0.85, b.y + b.h);
-        ctx.lineTo(b.x + b.w * 0.15, b.y + b.h);
-        ctx.closePath();
+        if (ctx.ellipse) ctx.ellipse(cx, cy, b.w * 0.65, b.h * 0.72, 0, 0, Math.PI * 2);
+        else ctx.arc(cx, cy, b.w * 0.55, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
+
+        // Main Dreadnought Hull
+        ctx.fillStyle = b.flash > 0 ? '#ffffff' : '#6d28d9';
+        ctx.strokeStyle = '#c4b5fd';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y + 18);
+        ctx.lineTo(b.x + b.w * 0.25, b.y);
+        ctx.lineTo(b.x + b.w * 0.75, b.y);
+        ctx.lineTo(b.x + b.w, b.y + 18);
+        ctx.lineTo(b.x + b.w * 0.84, b.y + b.h);
+        ctx.lineTo(b.x + b.w * 0.62, b.y + b.h * 0.82);
+        ctx.lineTo(b.x + b.w * 0.38, b.y + b.h * 0.82);
+        ctx.lineTo(b.x + b.w * 0.16, b.y + b.h);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Armor bridge & 4 weapon turrets
+        ctx.fillStyle = '#312e81';
+        ctx.fillRect(b.x + b.w * 0.28, b.y + 10, b.w * 0.44, b.h * 0.55);
+        ctx.fillStyle = '#a78bfa';
+        [0.18, 0.34, 0.66, 0.82].forEach(rx => {
+            ctx.fillRect(b.x + b.w * rx - 3, b.y + b.h * 0.68, 6, 12);
+        });
+
+        // Pulsing Reactor Core
+        const pr = 9 + Math.sin(this.time * 8) * 2;
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
+        ctx.beginPath(); ctx.arc(cx, cy + 4, pr + 5, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#f43f5e';
-        ctx.beginPath(); ctx.arc(b.x + b.w / 2, b.y + b.h / 2, 9, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.fillRect(b.x, b.y - 12, b.w, 5);
+        ctx.beginPath(); ctx.arc(cx, cy + 4, pr, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath(); ctx.arc(cx, cy + 4, 4, 0, Math.PI * 2); ctx.fill();
+
+        // Boss HP Bar
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+        ctx.fillRect(b.x, b.y - 14, b.w, 6);
         ctx.fillStyle = '#f43f5e';
-        ctx.fillRect(b.x, b.y - 12, b.w * Math.max(0, b.hp / b.maxHp), 5);
+        ctx.fillRect(b.x, b.y - 14, b.w * Math.max(0, b.hp / b.maxHp), 6);
         ctx.restore();
     }
 
@@ -1049,11 +1223,15 @@ window.SpaceShooterGame = class {
         ctx.save();
         ctx.translate(pw.x, pw.y);
         const c = pw.type === 'weapon' ? '#34d399' : '#fb7185';
-        ctx.shadowColor = c;
-        ctx.shadowBlur = 12;
+        const rad = 8 + Math.sin(this.time * 6) * 1.2;
         ctx.fillStyle = c;
-        ctx.beginPath(); ctx.arc(0, 0, 8 + Math.sin(this.time * 6) * 1.2, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.28;
+        ctx.beginPath(); ctx.arc(0, 0, rad + 5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
         ctx.fillStyle = '#0f172a';
         ctx.font = 'bold 10px sans-serif';
         ctx.textAlign = 'center';

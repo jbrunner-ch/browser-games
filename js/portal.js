@@ -224,71 +224,102 @@ class GamePortal {
             case 'minecraft':
                 return `<svg viewBox="0 0 320 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
-                        <linearGradient id="mc-bg" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stop-color="#064e3b"/>
-                            <stop offset="60%" stop-color="#022c22"/>
-                            <stop offset="100%" stop-color="#020617"/>
+                        <linearGradient id="mc-bg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#0f172a"/>
+                            <stop offset="55%" stop-color="#064e3b"/>
+                            <stop offset="100%" stop-color="#022c22"/>
                         </linearGradient>
-                        <linearGradient id="mc-grass" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#4ade80"/>
-                            <stop offset="100%" stop-color="#16a34a"/>
+                        <linearGradient id="mc-grass" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#86efac"/>
+                            <stop offset="50%" stop-color="#22c55e"/>
+                            <stop offset="100%" stop-color="#15803d"/>
                         </linearGradient>
                         <linearGradient id="mc-dirt" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#854d0e"/>
+                            <stop offset="0%" stop-color="#92400e"/>
                             <stop offset="100%" stop-color="#451a03"/>
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#mc-bg)"/>
-                    <g opacity="0.15">
-                        <line x1="0" y1="20" x2="320" y2="20" stroke="#4ade80" stroke-width="1"/>
-                        <line x1="0" y1="60" x2="320" y2="60" stroke="#4ade80" stroke-width="1"/>
-                        <line x1="0" y1="100" x2="320" y2="100" stroke="#4ade80" stroke-width="1"/>
-                        <line x1="0" y1="140" x2="320" y2="140" stroke="#4ade80" stroke-width="1"/>
+                    <!-- Sun & Voxel Clouds -->
+                    <rect x="248" y="18" width="24" height="24" fill="#fde047" opacity="0.9"/>
+                    <rect x="24" y="22" width="46" height="12" fill="#e2e8f0" opacity="0.28"/>
+                    <rect x="34" y="16" width="24" height="8" fill="#f8fafc" opacity="0.32"/>
+                    <rect x="172" y="28" width="42" height="10" fill="#e2e8f0" opacity="0.22"/>
+                    <!-- Voxel Terrain Backdrop -->
+                    <g opacity="0.55">
+                        <polygon points="56,112 80,100 104,112 80,124" fill="#22c55e"/>
+                        <polygon points="56,112 80,124 80,148 56,136" fill="#78350f"/>
+                        <polygon points="80,124 104,112 104,136 80,148" fill="#451a03"/>
+                        <polygon points="216,104 240,92 264,104 240,116" fill="#34d399"/>
+                        <polygon points="216,104 240,116 240,142 216,130" fill="#71717a"/>
+                        <polygon points="240,116 264,104 264,130 240,142" fill="#3f3f46"/>
                     </g>
-                    <!-- 3D Voxel Cube -->
-                    <g transform="translate(160, 80)">
-                        <polygon points="0,-45 42,-21 0,3 -42,-21" fill="url(#mc-grass)"/>
-                        <polygon points="-42,-21 0,3 0,55 -42,31" fill="url(#mc-dirt)"/>
-                        <polygon points="0,3 42,-21 42,31 0,55" fill="#582405"/>
-                        <path d="M-20,-10 L-40,-30 L-30,-40 L-10,-20 Z" fill="#38bdf8" opacity="0.9"/>
-                        <line x1="-35" y1="-35" x2="10" y2="10" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+                    <!-- Hero 3D Textured Voxel Cube -->
+                    <g transform="translate(158, 84)">
+                        <polygon points="0,-46 44,-22 0,2 -44,-22" fill="url(#mc-grass)"/>
+                        <polygon points="-14,-29 8,-18 -2,-11 -22,-22" fill="#4ade80" opacity="0.55"/>
+                        <polygon points="-44,-22 0,2 0,54 -44,30" fill="url(#mc-dirt)"/>
+                        <polygon points="-44,-22 0,2 0,12 -44,-12" fill="#16a34a"/>
+                        <polygon points="0,2 44,-22 44,30 0,54" fill="#582405"/>
+                        <polygon points="0,2 44,-22 44,-12 0,12" fill="#15803d"/>
+                        <!-- Gold Ore Glint -->
+                        <rect x="14" y="14" width="6" height="6" fill="#facc15"/>
+                        <rect x="26" y="4" width="5" height="5" fill="#fde047"/>
+                        <!-- 3D Diamond Pickaxe -->
+                        <g transform="translate(36, -6) rotate(-25)">
+                            <rect x="-2" y="-12" width="4" height="36" fill="#78350f" stroke="#451a03" stroke-width="0.8"/>
+                            <path d="M-16,-14 L0,-20 L16,-14 L12,-8 L0,-13 L-12,-8 Z" fill="#38bdf8" stroke="#bae6fd" stroke-width="1"/>
+                        </g>
                     </g>
-                    <rect x="30" y="30" width="36" height="12" fill="#e2e8f0" opacity="0.4" rx="2"/>
-                    <rect x="250" y="45" width="44" height="14" fill="#e2e8f0" opacity="0.3" rx="2"/>
-                    <circle cx="270" cy="90" r="2" fill="#38bdf8"/>
-                    <circle cx="60" cy="110" r="3" fill="#4ade80"/>
-                    <circle cx="210" cy="35" r="2.5" fill="#facc15"/>
+                    <!-- Block Spark Particles -->
+                    <rect x="116" y="42" width="4" height="4" fill="#4ade80"/>
+                    <rect x="208" y="54" width="4" height="4" fill="#38bdf8"/>
+                    <rect x="96" y="74" width="3" height="3" fill="#facc15"/>
                 </svg>`;
 
             case 'rushhour':
                 return `<svg viewBox="0 0 320 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="rh-bg" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stop-color="#18181b"/>
-                            <stop offset="60%" stop-color="#09090b"/>
+                            <stop offset="0%" stop-color="#0f172a"/>
                             <stop offset="100%" stop-color="#020617"/>
                         </linearGradient>
-                        <linearGradient id="rh-car" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stop-color="#ef4444"/>
-                            <stop offset="100%" stop-color="#b91c1c"/>
+                        <linearGradient id="rh-car" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#f87171"/>
+                            <stop offset="50%" stop-color="#ef4444"/>
+                            <stop offset="100%" stop-color="#991b1b"/>
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#rh-bg)"/>
-                    <g transform="translate(60, 20)" opacity="0.85">
-                        <rect x="0" y="0" width="200" height="120" rx="8" fill="#18181b" stroke="#3f3f46" stroke-width="2"/>
-                        <line x1="50" y1="0" x2="50" y2="120" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
-                        <line x1="100" y1="0" x2="100" y2="120" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
-                        <line x1="150" y1="0" x2="150" y2="120" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
-                        <line x1="0" y1="40" x2="200" y2="40" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
-                        <line x1="0" y1="80" x2="200" y2="80" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
-                        <path d="M205,60 L230,60 M222,52 L230,60 L222,68" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <rect x="8" y="10" width="34" height="60" rx="4" fill="#3b82f6"/>
-                        <rect x="58" y="5" width="34" height="70" rx="4" fill="#eab308"/>
-                        <rect x="158" y="25" width="34" height="85" rx="4" fill="#8b5cf6"/>
-                        <rect x="18" y="46" width="75" height="28" rx="5" fill="url(#rh-car)" stroke="#fca5a5" stroke-width="1"/>
-                        <rect x="35" y="50" width="28" height="20" rx="3" fill="#0f172a" opacity="0.8"/>
-                        <circle cx="85" cy="52" r="3" fill="#fef08a"/>
-                        <circle cx="85" cy="68" r="3" fill="#fef08a"/>
+                    <g transform="translate(54, 18)">
+                        <rect x="0" y="0" width="210" height="124" rx="10" fill="#18181b" stroke="#334155" stroke-width="2.5"/>
+                        <line x1="52" y1="4" x2="52" y2="120" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
+                        <line x1="105" y1="4" x2="105" y2="120" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
+                        <line x1="158" y1="4" x2="158" y2="120" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
+                        <line x1="4" y1="42" x2="206" y2="42" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
+                        <line x1="4" y1="82" x2="206" y2="82" stroke="#27272a" stroke-width="1.5" stroke-dasharray="4"/>
+                        <!-- Exit Gate -->
+                        <rect x="206" y="46" width="6" height="32" rx="2" fill="#10b981"/>
+                        <path d="M216,62 L240,62 M232,54 L240,62 L232,70" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 2.5D Blue Sedan -->
+                        <rect x="10" y="8" width="34" height="62" rx="6" fill="#1e3a8a"/>
+                        <rect x="10" y="6" width="34" height="58" rx="6" fill="#3b82f6"/>
+                        <rect x="15" y="18" width="24" height="24" rx="4" fill="#0f172a"/>
+                        <!-- 2.5D Heavy Cargo Truck -->
+                        <rect x="166" y="12" width="34" height="96" rx="5" fill="#4c1d95"/>
+                        <rect x="166" y="10" width="34" height="62" rx="4" fill="#7c3aed"/>
+                        <rect x="168" y="76" width="30" height="28" rx="5" fill="#a78bfa"/>
+                        <rect x="172" y="88" width="22" height="10" rx="2" fill="#0f172a"/>
+                        <!-- Hero Red Sports Car + Headlight Cones -->
+                        <polygon points="104,50 158,36 158,88 104,74" fill="#fde047" opacity="0.16"/>
+                        <rect x="24" y="48" width="80" height="30" rx="7" fill="#7f1d1d"/>
+                        <rect x="24" y="45" width="80" height="29" rx="7" fill="url(#rh-car)" stroke="#fca5a5" stroke-width="1"/>
+                        <rect x="24" y="57" width="80" height="2" fill="#f8fafc" opacity="0.8"/>
+                        <rect x="24" y="60" width="80" height="2" fill="#f8fafc" opacity="0.8"/>
+                        <rect x="46" y="49" width="34" height="21" rx="4" fill="#020617" opacity="0.9"/>
+                        <rect x="26" y="48" width="4" height="23" rx="1" fill="#18181b"/>
+                        <circle cx="101" cy="51" r="2.8" fill="#fef08a"/>
+                        <circle cx="101" cy="68" r="2.8" fill="#fef08a"/>
                     </g>
                 </svg>`;
 
@@ -296,32 +327,42 @@ class GamePortal {
                 return `<svg viewBox="0 0 320 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="rc-sky" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#1e1b4b"/>
-                            <stop offset="50%" stop-color="#4c1d95"/>
+                            <stop offset="0%" stop-color="#0f0c29"/>
+                            <stop offset="50%" stop-color="#302b63"/>
                             <stop offset="85%" stop-color="#c2410c"/>
                             <stop offset="100%" stop-color="#fb923c"/>
                         </linearGradient>
-                        <linearGradient id="rc-grid" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#020617"/>
-                            <stop offset="100%" stop-color="#0f172a"/>
-                        </linearGradient>
                     </defs>
-                    <rect width="320" height="90" fill="url(#rc-sky)"/>
-                    <rect y="90" width="320" height="70" fill="url(#rc-grid)"/>
-                    <polygon points="160,90 160,90 290,160 30,160" fill="#090d16" stroke="#06b6d4" stroke-width="0.8"/>
-                    <line x1="160" y1="90" x2="160" y2="160" stroke="#facc15" stroke-width="2" stroke-dasharray="8 6"/>
-                    <line x1="140" y1="90" x2="80" y2="160" stroke="#38bdf8" stroke-width="1" opacity="0.6"/>
-                    <line x1="180" y1="90" x2="240" y2="160" stroke="#38bdf8" stroke-width="1" opacity="0.6"/>
+                    <rect width="320" height="88" fill="url(#rc-sky)"/>
+                    <!-- Cyber Skyline -->
+                    <g fill="#090d16" opacity="0.85">
+                        <rect x="12" y="46" width="22" height="42"/><rect x="38" y="34" width="18" height="54"/>
+                        <rect x="64" y="54" width="26" height="34"/><rect x="230" y="50" width="22" height="38"/>
+                        <rect x="256" y="30" width="24" height="58"/><rect x="284" y="44" width="20" height="44"/>
+                    </g>
+                    <g fill="#22d3ee" opacity="0.6">
+                        <rect x="42" y="42" width="3" height="6"/><rect x="48" y="52" width="3" height="6"/>
+                        <rect x="262" y="38" width="3" height="6"/><rect x="270" y="48" width="3" height="6"/>
+                    </g>
+                    <rect y="88" width="320" height="72" fill="#020617"/>
+                    <polygon points="132,88 188,88 304,160 16,160" fill="#111827" stroke="#22d3ee" stroke-width="1.2"/>
+                    <line x1="160" y1="88" x2="160" y2="160" stroke="#facc15" stroke-width="2" stroke-dasharray="8 6"/>
+                    <!-- 3D Start Gantry -->
+                    <rect x="92" y="52" width="6" height="42" fill="#1e293b"/>
+                    <rect x="222" y="52" width="6" height="42" fill="#1e293b"/>
+                    <rect x="90" y="48" width="140" height="8" rx="2" fill="#0f172a" stroke="#38bdf8" stroke-width="1"/>
+                    <circle cx="144" cy="52" r="2" fill="#22c55e"/><circle cx="160" cy="52" r="2" fill="#22c55e"/><circle cx="176" cy="52" r="2" fill="#22c55e"/>
+                    <!-- Supercar + Nitro -->
                     <g transform="translate(160, 126)">
-                        <ellipse cx="0" cy="18" rx="42" ry="6" fill="#06b6d4" opacity="0.75"/>
-                        <path d="M-36,12 L-28,-2 L-16,-12 L16,-12 L28,-2 L36,12 Z" fill="#ef4444"/>
-                        <polygon points="-14,-10 14,-10 10,-20 -10,-20" fill="#020617"/>
-                        <rect x="-38" y="-22" width="76" height="4" rx="2" fill="#0f172a"/>
-                        <line x1="-22" y1="-22" x2="-22" y2="-12" stroke="#0f172a" stroke-width="2.5"/>
-                        <line x1="22" y1="-22" x2="22" y2="-12" stroke="#0f172a" stroke-width="2.5"/>
-                        <rect x="-30" y="2" width="60" height="3" rx="1.5" fill="#ff0044"/>
-                        <circle cx="-12" cy="12" r="3" fill="#ff7700"/>
-                        <circle cx="12" cy="12" r="3" fill="#ff7700"/>
+                        <ellipse cx="0" cy="18" rx="44" ry="7" fill="#06b6d4" opacity="0.7"/>
+                        <path d="M-38,12 L-30,-3 L-18,-13 L18,-13 L30,-3 L38,12 Z" fill="#ef4444"/>
+                        <polygon points="-15,-11 15,-11 11,-21 -11,-21" fill="#020617"/>
+                        <rect x="-40" y="-23" width="80" height="4" rx="2" fill="#18181b"/>
+                        <line x1="-22" y1="-23" x2="-22" y2="-13" stroke="#18181b" stroke-width="2.5"/>
+                        <line x1="22" y1="-23" x2="22" y2="-13" stroke="#18181b" stroke-width="2.5"/>
+                        <rect x="-32" y="2" width="64" height="3.5" rx="1.5" fill="#ff0044"/>
+                        <polygon points="-16,12 -10,12 -13,26" fill="#38bdf8"/>
+                        <polygon points="10,12 16,12 13,26" fill="#38bdf8"/>
                     </g>
                 </svg>`;
 
@@ -330,28 +371,28 @@ class GamePortal {
                     <defs>
                         <linearGradient id="td-bg" x1="0" y1="0" x2="1" y2="1">
                             <stop offset="0%" stop-color="#082f49"/>
-                            <stop offset="60%" stop-color="#0c0a09"/>
+                            <stop offset="60%" stop-color="#0b1020"/>
                             <stop offset="100%" stop-color="#020617"/>
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#td-bg)"/>
-                    <g opacity="0.2">
-                        <polygon points="40,20 60,30 60,50 40,60 20,50 20,30" stroke="#38bdf8" fill="none" stroke-width="1"/>
-                        <polygon points="100,20 120,30 120,50 100,60 80,50 80,30" stroke="#38bdf8" fill="none" stroke-width="1"/>
-                        <polygon points="260,100 280,110 280,130 260,140 240,130 240,110" stroke="#38bdf8" fill="none" stroke-width="1"/>
+                    <!-- Armored Road -->
+                    <path d="M0,120 L180,120 L180,45 L320,45" fill="none" stroke="#1e1b4b" stroke-width="28" stroke-linejoin="round"/>
+                    <path d="M0,120 L180,120 L180,45 L320,45" fill="none" stroke="#111827" stroke-width="20" stroke-linejoin="round"/>
+                    <!-- Plasma & Tesla Turrets -->
+                    <g transform="translate(96, 82)">
+                        <polygon points="-22,-10 -10,-22 10,-22 22,-10 22,10 10,22 -10,22 -22,10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                        <circle cx="0" cy="0" r="13" fill="#0f172a" stroke="#22d3ee" stroke-width="2"/>
+                        <line x1="4" y1="-5" x2="46" y2="-32" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="8" y1="2" x2="50" y2="-25" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="0" cy="0" r="5" fill="#38bdf8"/>
+                        <polyline points="48,-28 110,-38 145,-34" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+                        <polyline points="48,-28 110,-38 145,-34" fill="none" stroke="#ffffff" stroke-width="1"/>
                     </g>
-                    <g transform="translate(100, 95)">
-                        <rect x="-24" y="-8" width="48" height="24" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
-                        <circle cx="0" cy="-16" r="18" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
-                        <circle cx="0" cy="-16" r="8" fill="#38bdf8" opacity="0.9"/>
-                        <line x1="8" y1="-20" x2="55" y2="-45" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
-                        <line x1="12" y1="-14" x2="59" y2="-39" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
-                        <line x1="57" y1="-42" x2="220" y2="-75" stroke="#22d3ee" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="57" y1="-42" x2="220" y2="-75" stroke="#ffffff" stroke-width="0.8"/>
-                    </g>
-                    <g transform="translate(235, 45)">
-                        <polygon points="0,-12 14,0 0,12 -14,0" fill="#dc2626" stroke="#fca5a5" stroke-width="1.5"/>
-                        <circle cx="0" cy="0" r="4" fill="#fef08a"/>
+                    <!-- Enemy Dreadnought Mech -->
+                    <g transform="translate(245, 45)">
+                        <polygon points="0,-16 18,-6 18,6 0,16 -18,6 -18,-6" fill="#ec4899" stroke="#fbcfe8" stroke-width="1.5"/>
+                        <circle cx="0" cy="0" r="6" fill="#fef08a"/>
                     </g>
                 </svg>`;
 
@@ -365,45 +406,57 @@ class GamePortal {
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#pl-bg)"/>
-                    <rect x="20" y="125" width="90" height="12" rx="4" fill="#334155" stroke="#6366f1" stroke-width="1.5"/>
-                    <rect x="130" y="90" width="75" height="12" rx="4" fill="#334155" stroke="#22d3ee" stroke-width="1.5"/>
-                    <rect x="230" y="60" width="70" height="12" rx="4" fill="#334155" stroke="#a855f7" stroke-width="1.5"/>
-                    <g transform="translate(165, 55)">
-                        <circle cx="0" cy="-14" r="6" fill="#38bdf8"/>
-                        <path d="M-4,-8 L4,-4 L-2,10 L6,14" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" fill="none"/>
-                        <path d="M-2,-2 L-10,4 M2,-4 L10,-8" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M-30,30 Q-15,5 0,-8" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3" fill="none" opacity="0.6"/>
+                    <rect x="20" y="124" width="90" height="14" rx="4" fill="#1e293b" stroke="#6366f1" stroke-width="1.5"/>
+                    <rect x="130" y="92" width="75" height="14" rx="4" fill="#1e293b" stroke="#22d3ee" stroke-width="1.5"/>
+                    <rect x="230" y="64" width="70" height="14" rx="4" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+                    <!-- Laser Spikes -->
+                    <polygon points="48,124 55,112 62,124" fill="#ef4444"/><polygon points="62,124 69,112 76,124" fill="#ef4444"/>
+                    <!-- Dash Afterimages -->
+                    <g transform="translate(132, 68)" opacity="0.35">
+                        <circle cx="0" cy="-12" r="6" fill="#38bdf8"/><rect x="-5" y="-6" width="10" height="16" rx="3" fill="#2563eb"/>
                     </g>
-                    <polygon points="265,35 271,43 265,51 259,43" fill="#facc15" stroke="#fef08a" stroke-width="1"/>
-                    <polygon points="165,70 170,76 165,82 160,76" fill="#38bdf8" stroke="#bae6fd" stroke-width="1"/>
+                    <!-- Exo-Runner -->
+                    <g transform="translate(166, 56)">
+                        <path d="M-6,-6 Q-22,-10 -32,-2 Q-20,0 -6,-2 Z" fill="#22d3ee" opacity="0.85"/>
+                        <rect x="-7" y="-16" width="14" height="12" rx="4" fill="#e2e8f0"/>
+                        <rect x="0" y="-13" width="7" height="4" rx="1" fill="#22d3ee"/>
+                        <rect x="-6" y="-4" width="12" height="16" rx="3" fill="#2563eb"/>
+                        <line x1="-2" y1="12" x2="-8" y2="24" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="3" y1="12" x2="9" y2="22" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+                    </g>
+                    <!-- Faceted Crystal & Portal -->
+                    <polygon points="165,70 171,78 165,86 159,78" fill="#38bdf8" stroke="#bae6fd" stroke-width="1"/>
+                    <ellipse cx="268" cy="40" rx="11" ry="18" fill="none" stroke="#10b981" stroke-width="3"/>
+                    <ellipse cx="268" cy="40" rx="6" ry="11" fill="#34d399" opacity="0.5"/>
                 </svg>`;
 
             case 'breakout':
                 return `<svg viewBox="0 0 320 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="bo-bg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#18181b"/>
-                            <stop offset="100%" stop-color="#09090b"/>
+                            <stop offset="0%" stop-color="#0f172a"/>
+                            <stop offset="100%" stop-color="#020617"/>
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#bo-bg)"/>
-                    <g transform="translate(20, 20)">
-                        <rect x="0" y="0" width="40" height="14" rx="3" fill="#ef4444"/>
-                        <rect x="46" y="0" width="40" height="14" rx="3" fill="#ef4444"/>
-                        <rect x="92" y="0" width="40" height="14" rx="3" fill="#f97316"/>
-                        <rect x="138" y="0" width="40" height="14" rx="3" fill="#f97316"/>
-                        <rect x="184" y="0" width="40" height="14" rx="3" fill="#facc15"/>
-                        <rect x="230" y="0" width="40" height="14" rx="3" fill="#facc15"/>
-
-                        <rect x="23" y="20" width="40" height="14" rx="3" fill="#22c55e"/>
-                        <rect x="69" y="20" width="40" height="14" rx="3" fill="#22c55e"/>
-                        <rect x="115" y="20" width="40" height="14" rx="3" fill="#06b6d4"/>
-                        <rect x="161" y="20" width="40" height="14" rx="3" fill="#06b6d4"/>
-                        <rect x="207" y="20" width="40" height="14" rx="3" fill="#a855f7"/>
+                    <g transform="translate(22, 18)">
+                        <rect x="0" y="0" width="42" height="14" rx="3" fill="#ef4444" stroke="#fca5a5" stroke-width="0.8"/>
+                        <rect x="46" y="0" width="42" height="14" rx="3" fill="#f97316" stroke="#fdba74" stroke-width="0.8"/>
+                        <rect x="92" y="0" width="42" height="14" rx="3" fill="#facc15" stroke="#fef08a" stroke-width="0.8"/>
+                        <rect x="138" y="0" width="42" height="14" rx="3" fill="#22c55e" stroke="#86efac" stroke-width="0.8"/>
+                        <rect x="184" y="0" width="42" height="14" rx="3" fill="#06b6d4" stroke="#67e8f9" stroke-width="0.8"/>
+                        <rect x="230" y="0" width="42" height="14" rx="3" fill="#a855f7" stroke="#d8b4fe" stroke-width="0.8"/>
+                        <rect x="22" y="20" width="42" height="14" rx="3" fill="#64748b" stroke="#cbd5e1" stroke-width="1"/>
+                        <rect x="114" y="20" width="42" height="14" rx="3" fill="#f97316"/>
+                        <rect x="206" y="20" width="42" height="14" rx="3" fill="#38bdf8"/>
                     </g>
-                    <path d="M140,135 Q190,95 210,48" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4" fill="none" opacity="0.6"/>
-                    <circle cx="210" cy="48" r="6" fill="#ffffff"/>
-                    <rect x="105" y="136" width="70" height="10" rx="5" fill="#38bdf8" stroke="#bae6fd" stroke-width="1"/>
+                    <path d="M140,132 Q192,92 212,50" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4" fill="none" opacity="0.7"/>
+                    <circle cx="212" cy="50" r="6" fill="#ffffff" stroke="#38bdf8" stroke-width="2"/>
+                    <!-- 2.5D Laser Paddle -->
+                    <rect x="98" y="132" width="84" height="12" rx="6" fill="#0284c7"/>
+                    <rect x="98" y="130" width="84" height="10" rx="5" fill="#e0f2fe"/>
+                    <rect x="102" y="123" width="4" height="8" fill="#ec4899"/>
+                    <rect x="174" y="123" width="4" height="8" fill="#ec4899"/>
                 </svg>`;
 
             case 'spaceshooter':
@@ -416,20 +469,20 @@ class GamePortal {
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#ss-bg)"/>
-                    <circle cx="35" cy="25" r="1" fill="#fff" opacity="0.8"/>
-                    <circle cx="95" cy="70" r="1.5" fill="#38bdf8" opacity="0.6"/>
-                    <circle cx="280" cy="30" r="1" fill="#fff" opacity="0.9"/>
-                    <circle cx="220" cy="130" r="1.5" fill="#facc15" opacity="0.7"/>
-                    <g transform="translate(160, 115)">
-                        <polygon points="-6,16 6,16 0,30" fill="#06b6d4" opacity="0.85"/>
-                        <polygon points="0,-24 18,14 6,10 0,14 -6,10 -18,14" fill="#38bdf8" stroke="#bae6fd" stroke-width="1"/>
-                        <polygon points="0,-16 6,4 0,8 -6,4" fill="#0f172a"/>
-                        <line x1="-12" y1="-8" x2="-12" y2="-75" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
-                        <line x1="12" y1="-8" x2="12" y2="-75" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="255" cy="40" r="24" fill="#312e81" opacity="0.5"/>
+                    <ellipse cx="255" cy="40" rx="38" ry="8" fill="none" stroke="#818cf8" stroke-width="1.5" transform="rotate(-18 255 40)" opacity="0.6"/>
+                    <circle cx="35" cy="25" r="1.2" fill="#fff"/><circle cx="95" cy="70" r="1.5" fill="#38bdf8"/>
+                    <g transform="translate(160, 114)">
+                        <polygon points="-8,14 -3,14 -5.5,28" fill="#38bdf8"/>
+                        <polygon points="3,14 8,14 5.5,28" fill="#38bdf8"/>
+                        <polygon points="0,-26 22,12 10,8 0,14 -10,8 -22,12" fill="#e2e8f0" stroke="#38bdf8" stroke-width="1.2"/>
+                        <polygon points="0,-16 5,2 0,6 -5,2" fill="#06b6d4"/>
+                        <line x1="-14" y1="-6" x2="-14" y2="-74" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="14" y1="-6" x2="14" y2="-74" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
                     </g>
-                    <g transform="translate(160, 35)">
-                        <polygon points="0,-8 35,8 20,22 -20,22 -35,8" fill="#7c3aed" stroke="#c084fc" stroke-width="1.5"/>
-                        <circle cx="0" cy="10" r="5" fill="#f43f5e"/>
+                    <g transform="translate(160, 34)">
+                        <polygon points="0,-10 42,6 24,24 -24,24 -42,6" fill="#6d28d9" stroke="#c084fc" stroke-width="1.5"/>
+                        <circle cx="0" cy="10" r="6" fill="#f43f5e"/>
                     </g>
                 </svg>`;
 
@@ -437,22 +490,22 @@ class GamePortal {
                 return `<svg viewBox="0 0 320 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <radialGradient id="torch" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stop-color="#f97316" stop-opacity="0.8"/>
-                            <stop offset="40%" stop-color="#ea580c" stop-opacity="0.4"/>
+                            <stop offset="0%" stop-color="#f97316" stop-opacity="0.85"/>
+                            <stop offset="45%" stop-color="#ea580c" stop-opacity="0.35"/>
                             <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
                         </radialGradient>
                     </defs>
-                    <rect width="320" height="160" fill="#090d16"/>
-                    <path d="M70,160 L70,70 Q160,20 250,70 L250,160 Z" fill="#0f172a" stroke="#334155" stroke-width="2"/>
-                    <circle cx="150" cy="85" r="75" fill="url(#torch)"/>
-                    <g transform="translate(150, 95)">
-                        <circle cx="0" cy="-22" r="7" fill="#cbd5e1"/>
-                        <path d="M-8,-14 L8,-14 L12,18 L-12,18 Z" fill="#475569"/>
-                        <line x1="-10" y1="-4" x2="-18" y2="-16" stroke="#78350f" stroke-width="3"/>
-                        <circle cx="-19" cy="-19" r="6" fill="#facc15"/>
-                        <circle cx="-19" cy="-19" r="3" fill="#ef4444"/>
-                        <line x1="12" y1="-2" x2="26" y2="-18" stroke="#38bdf8" stroke-width="2.5"/>
-                        <line x1="8" y1="-4" x2="16" y2="2" stroke="#cbd5e1" stroke-width="2"/>
+                    <rect width="320" height="160" fill="#060911"/>
+                    <path d="M64,160 L64,66 Q160,14 256,66 L256,160 Z" fill="#0f172a" stroke="#334155" stroke-width="2.5"/>
+                    <circle cx="150" cy="86" r="80" fill="url(#torch)"/>
+                    <g transform="translate(148, 96)">
+                        <path d="M-12,-14 L12,-14 L16,20 L-16,20 Z" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+                        <circle cx="0" cy="-22" r="8" fill="#6366f1"/>
+                        <circle cx="-3" cy="-22" r="1.8" fill="#22d3ee"/><circle cx="3" cy="-22" r="1.8" fill="#22d3ee"/>
+                        <line x1="-12" y1="-4" x2="-22" y2="-18" stroke="#78350f" stroke-width="3"/>
+                        <circle cx="-23" cy="-21" r="6" fill="#fde047"/>
+                        <line x1="12" y1="-2" x2="28" y2="-20" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="8" y1="-5" x2="17" y2="3" stroke="#e2e8f0" stroke-width="2.5"/>
                     </g>
                 </svg>`;
 
@@ -465,24 +518,28 @@ class GamePortal {
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#ms-bg)"/>
-                    <g stroke="#334155" stroke-width="1.5" fill="#1e293b">
-                        <polygon points="100,50 120,60 120,80 100,90 80,80 80,60"/>
-                        <polygon points="145,50 165,60 165,80 145,90 125,80 125,60" fill="#0f172a" stroke="#38bdf8"/>
-                        <polygon points="190,50 210,60 210,80 190,90 170,80 170,60"/>
-                        <polygon points="122,85 142,95 142,115 122,125 102,115 102,95"/>
-                        <polygon points="167,85 187,95 187,115 167,125 147,115 147,95" fill="#0f172a" stroke="#ef4444"/>
+                    <g stroke="#475569" stroke-width="1.5" fill="#1e293b">
+                        <polygon points="100,48 122,59 122,81 100,92 78,81 78,59"/>
+                        <polygon points="146,48 168,59 168,81 146,92 124,81 124,59" fill="#0b1220" stroke="#38bdf8"/>
+                        <polygon points="192,48 214,59 214,81 192,92 170,81 170,59"/>
+                        <polygon points="123,86 145,97 145,119 123,130 101,119 101,97"/>
+                        <polygon points="169,86 191,97 191,119 169,130 147,119 147,97" fill="#0f172a" stroke="#f43f5e"/>
                     </g>
-                    <text x="96" y="74" fill="#38bdf8" font-family="monospace" font-size="14" font-weight="bold">1</text>
-                    <text x="186" y="74" fill="#22c55e" font-family="monospace" font-size="14" font-weight="bold">2</text>
-                    <g transform="translate(145, 70)">
-                        <circle cx="0" cy="0" r="10" fill="#0f172a" stroke="#ef4444" stroke-width="2"/>
-                        <circle cx="0" cy="0" r="3" fill="#f43f5e"/>
-                        <line x1="-14" y1="0" x2="14" y2="0" stroke="#ef4444" stroke-width="1.5"/>
-                        <line x1="0" y1="-14" x2="0" y2="14" stroke="#ef4444" stroke-width="1.5"/>
+                    <text x="95" y="75" fill="#60a5fa" font-family="monospace" font-size="14" font-weight="bold">1</text>
+                    <text x="187" y="75" fill="#34d399" font-family="monospace" font-size="14" font-weight="bold">2</text>
+                    <g transform="translate(146, 70)">
+                        <line x1="-13" y1="0" x2="13" y2="0" stroke="#cbd5e1" stroke-width="2"/>
+                        <line x1="0" y1="-13" x2="0" y2="13" stroke="#cbd5e1" stroke-width="2"/>
+                        <line x1="-9" y1="-9" x2="9" y2="9" stroke="#cbd5e1" stroke-width="1.6"/>
+                        <line x1="9" y1="-9" x2="-9" y2="9" stroke="#cbd5e1" stroke-width="1.6"/>
+                        <circle cx="0" cy="0" r="8.5" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+                        <circle cx="-2.5" cy="-2.5" r="2.2" fill="#e2e8f0" opacity="0.6"/>
+                        <circle cx="0" cy="0" r="2.5" fill="#f43f5e"/>
                     </g>
-                    <g transform="translate(167, 105)">
-                        <polygon points="0,-8 10,-4 0,0" fill="#ef4444"/>
-                        <line x1="0" y1="-8" x2="0" y2="6" stroke="#94a3b8" stroke-width="1.5"/>
+                    <g transform="translate(169, 108)">
+                        <ellipse cx="0" cy="7" rx="6" ry="2.5" fill="#475569"/>
+                        <polygon points="-1,-9 10,-4 -1,1" fill="#f43f5e"/>
+                        <line x1="-1" y1="-9" x2="-1" y2="7" stroke="#e2e8f0" stroke-width="1.8"/>
                     </g>
                 </svg>`;
 
@@ -490,36 +547,31 @@ class GamePortal {
                 return `<svg viewBox="0 0 320 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="sn-bg" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stop-color="#022c22"/>
-                            <stop offset="60%" stop-color="#064e3b"/>
+                            <stop offset="0%" stop-color="#050816"/>
+                            <stop offset="60%" stop-color="#0f172a"/>
                             <stop offset="100%" stop-color="#020617"/>
                         </linearGradient>
                     </defs>
                     <rect width="320" height="160" fill="url(#sn-bg)"/>
-                    <g opacity="0.25" stroke="#22c55e" stroke-width="1">
-                        <line x1="0" y1="40" x2="320" y2="40"/>
-                        <line x1="0" y1="80" x2="320" y2="80"/>
-                        <line x1="0" y1="120" x2="320" y2="120"/>
-                        <line x1="60" y1="0" x2="60" y2="160"/>
-                        <line x1="120" y1="0" x2="120" y2="160"/>
-                        <line x1="180" y1="0" x2="180" y2="160"/>
+                    <g opacity="0.25" stroke="#4f46e5" stroke-width="1">
+                        <line x1="0" y1="40" x2="320" y2="40"/><line x1="0" y1="80" x2="320" y2="80"/>
+                        <line x1="0" y1="120" x2="320" y2="120"/><line x1="60" y1="0" x2="60" y2="160"/>
+                        <line x1="120" y1="0" x2="120" y2="160"/><line x1="180" y1="0" x2="180" y2="160"/>
                         <line x1="240" y1="0" x2="240" y2="160"/>
                     </g>
-                    <g transform="translate(60, 85)">
-                        <rect x="0" y="-8" width="20" height="16" rx="4" fill="#047857"/>
-                        <rect x="26" y="-8" width="20" height="16" rx="4" fill="#059669"/>
-                        <rect x="52" y="-8" width="20" height="16" rx="4" fill="#10b981"/>
-                        <rect x="78" y="-14" width="20" height="22" rx="4" fill="#34d399"/>
-                        <rect x="104" y="-20" width="22" height="24" rx="5" fill="#22d3ee" stroke="#67e8f9" stroke-width="1.5"/>
-                        <circle cx="118" cy="-14" r="2.5" fill="#020617"/>
-                        <circle cx="118" cy="-14" r="1.2" fill="#facc15"/>
-                        <circle cx="118" cy="-6" r="2.5" fill="#020617"/>
-                        <circle cx="118" cy="-6" r="1.2" fill="#facc15"/>
+                    <g transform="translate(56, 86)">
+                        <rect x="0" y="-7" width="18" height="14" rx="5" fill="#4f46e5"/>
+                        <rect x="24" y="-8" width="20" height="16" rx="5" fill="#6366f1"/>
+                        <rect x="50" y="-9" width="20" height="18" rx="5" fill="#0ea5e9"/>
+                        <rect x="76" y="-12" width="22" height="20" rx="6" fill="#06b6d4"/>
+                        <polygon points="104,-18 134,-12 134,8 104,12" fill="#22d3ee" stroke="#a5f3fc" stroke-width="1.2"/>
+                        <circle cx="122" cy="-7" r="2.5" fill="#fde047"/>
+                        <circle cx="122" cy="1" r="2.5" fill="#fde047"/>
                     </g>
-                    <g transform="translate(230, 65)">
-                        <circle cx="0" cy="0" r="14" fill="#f43f5e" opacity="0.3"/>
-                        <circle cx="0" cy="0" r="8" fill="#fb7185"/>
-                        <ellipse cx="0" cy="0" rx="16" ry="6" fill="none" stroke="#38bdf8" stroke-width="1.5" transform="rotate(-25)"/>
+                    <g transform="translate(236, 70)">
+                        <circle cx="0" cy="0" r="14" fill="#34d399" opacity="0.25"/>
+                        <polygon points="0,-9 9,0 0,9 -9,0" fill="#34d399"/>
+                        <ellipse cx="0" cy="0" rx="18" ry="6" fill="none" stroke="#67e8f9" stroke-width="1.5" transform="rotate(-25)"/>
                     </g>
                 </svg>`;
 
@@ -813,7 +865,6 @@ bindEvents() {
             }
         }
     }
-}
 
 
     /* ------------------------------------------------------------------ */
@@ -1073,6 +1124,7 @@ bindEvents() {
         clearTimeout(this._toastTimer);
         this._toastTimer = setTimeout(() => toast.classList.remove('active'), 2800);
     }
+}
 
 window.addEventListener('DOMContentLoaded', () => {
     window.portal = new GamePortal();

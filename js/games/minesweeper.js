@@ -57,7 +57,7 @@
     const NOOP = function () { return { addColorStop() {} }; };
     const SAFE_METHODS = new Set(['closePath', 'translate', 'scale', 'setTransform', 'createRadialGradient',
         'createLinearGradient', 'roundRect', 'save', 'restore', 'fillText', 'arc', 'clip', 'rect', 'quadraticCurveTo',
-        'beginPath', 'moveTo', 'lineTo', 'stroke', 'fill', 'fillRect', 'strokeRect', 'clearRect', 'rotate']);
+        'beginPath', 'moveTo', 'lineTo', 'stroke', 'fill', 'fillRect', 'strokeRect', 'clearRect', 'rotate', 'drawImage', 'ellipse']);
 
     // Wraps a 2D context so methods missing in mock/limited contexts never throw.
     function safeContext(raw) {
@@ -455,6 +455,44 @@
             }
             this.boardOffset.x = Math.floor((w - boardW) / 2);
             this.boardOffset.y = Math.floor(HUD_H + (availH - boardH) / 2 + 8);
+            this.buildBgCache(w, h, dpr, boardW, boardH);
+        }
+
+        buildBgCache(w, h, dpr, boardW, boardH) {
+            if (!this.container || typeof document === 'undefined' || !document.createElement) return;
+            const bg = document.createElement('canvas');
+            bg.width = Math.floor(w * dpr);
+            bg.height = Math.floor(h * dpr);
+            const g = bg.getContext('2d');
+            if (!g || !g.createRadialGradient) return;
+
+            g.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const rad = g.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, Math.max(w, h) * 0.7);
+            rad.addColorStop(0, '#162238');
+            rad.addColorStop(1, '#030712');
+            g.fillStyle = rad;
+            g.fillRect(0, 0, w, h);
+
+            // Subtle tactical grid behind board
+            g.fillStyle = 'rgba(148, 163, 184, 0.04)';
+            for (let x = 0; x < w; x += 36) g.fillRect(x, 0, 1, h);
+            for (let y = 0; y < h; y += 36) g.fillRect(0, y, w, 1);
+
+            // Recessed Board Tray Frame
+            const pad = 10;
+            const bx = this.boardOffset.x - pad;
+            const by = this.boardOffset.y - pad;
+            const bw = boardW + pad * 2;
+            const bh = boardH + pad * 2;
+            g.fillStyle = 'rgba(2, 6, 23, 0.65)';
+            g.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+            g.lineWidth = 1.5;
+            if (g.roundRect) {
+                g.beginPath(); g.roundRect(bx, by, bw, bh, 14); g.fill(); g.stroke();
+            } else {
+                g.fillRect(bx, by, bw, bh); g.strokeRect(bx, by, bw, bh);
+            }
+            this.bgCanvas = bg;
         }
 
         cellCenter(r, c) {
@@ -1014,13 +1052,18 @@
         render() {
             const ctx = this.ctx;
             const w = this.width, h = this.height;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            if (this.bgCanvas && ctx.drawImage) {
+                ctx.drawImage(this.bgCanvas, 0, 0);
+            } else {
+                ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+                const bg = ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, Math.max(w, h) * 0.7);
+                bg.addColorStop(0, '#1e293b');
+                bg.addColorStop(1, '#020617');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
+            }
             ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-
-            const bg = ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, Math.max(w, h) * 0.7);
-            bg.addColorStop(0, '#1e293b');
-            bg.addColorStop(1, '#020617');
-            ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, w, h);
 
             ctx.save();
             if (this.shake > 0.1) ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
@@ -1029,6 +1072,7 @@
 
             // square: edge length; hex: circumradius
             const baseSize = this.isHex ? this.hexSize * 0.94 : this.cellSize - 2;
+            const pulseT = now() * 0.005;
 
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
@@ -1038,33 +1082,49 @@
                     const isHover = this.hover && this.hover.r === r && this.hover.c === c && this.state === 'play';
                     let scale = 1;
                     if (cell.isRevealed && cell.appear < 1) {
-                        const t = clamp(cell.appear, 0, 1) / 1;
+                        const t = clamp(cell.appear, 0, 1);
                         scale = 0.6 + 0.4 * (1 - Math.pow(1 - t, 3));
                     }
                     if (cell.pop > 0) scale += cell.pop * 0.18;
                     const size = baseSize * scale;
 
-                    this.cellPath(ctx, p.x, p.y, size);
                     if (showRevealed) {
-                        ctx.fillStyle = cell.isMine ? (cell.isBlown ? '#b91c1c' : '#7f1d1d') : '#0b1220';
+                        this.cellPath(ctx, p.x, p.y, size);
+                        ctx.fillStyle = cell.isMine ? (cell.isBlown ? '#991b1b' : '#450a0a') : '#0b1324';
                         ctx.fill();
-                        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                        ctx.strokeStyle = cell.isMine ? 'rgba(248,113,113,0.35)' : 'rgba(56,189,248,0.08)';
                         ctx.stroke();
-                        if (cell.isMine) this.drawMine(ctx, p.x, p.y, baseSize * 0.3, cell.isBlown);
+                        if (cell.isMine) this.drawMine(ctx, p.x, p.y, baseSize * 0.3, cell.isBlown, pulseT);
                         else if (cell.count > 0) {
                             ctx.fillStyle = NUM_COLORS[cell.count - 1];
                             ctx.font = `bold ${Math.floor(baseSize * 0.58)}px system-ui, sans-serif`;
                             ctx.fillText(String(cell.count), p.x, p.y + 1);
                         }
                     } else {
-                        const g = ctx.createLinearGradient(p.x, p.y - size / 2, p.x, p.y + size / 2);
-                        g.addColorStop(0, isHover ? '#64748b' : '#475569');
-                        g.addColorStop(1, isHover ? '#475569' : '#334155');
-                        ctx.fillStyle = g;
+                        // 2.5D Tactile Raised Tile (zero per-cell gradient allocations)
+                        this.cellPath(ctx, p.x, p.y + 1.5, size);
+                        ctx.fillStyle = '#1e293b';
                         ctx.fill();
-                        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+
+                        this.cellPath(ctx, p.x, p.y, size);
+                        ctx.fillStyle = isHover ? '#475569' : '#334155';
+                        ctx.fill();
+                        ctx.strokeStyle = isHover ? '#38bdf8' : 'rgba(255,255,255,0.16)';
+                        ctx.lineWidth = isHover ? 1.5 : 1;
                         ctx.stroke();
-                        if (cell.isFlagged) this.drawFlag(ctx, p.x, p.y, baseSize * 0.34);
+
+                        // Top bevel specular highlight
+                        ctx.fillStyle = isHover ? 'rgba(186, 230, 253, 0.25)' : 'rgba(255, 255, 255, 0.12)';
+                        if (this.isHex) {
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y - size * 0.32, size * 0.22, 0, Math.PI * 2);
+                            ctx.fill();
+                        } else {
+                            ctx.fillRect(p.x - size * 0.38, p.y - size * 0.44, size * 0.76, Math.max(1.5, size * 0.1));
+                        }
+                        ctx.lineWidth = 1;
+
+                        if (cell.isFlagged) this.drawFlag(ctx, p.x, p.y, baseSize * 0.34, pulseT);
                     }
                 }
             }
@@ -1084,35 +1144,70 @@
             ctx.restore();
         }
 
-        drawMine(ctx, x, y, rad, blown) {
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = Math.max(1.5, rad * 0.25);
+        drawMine(ctx, x, y, rad, blown, pulseT = 0) {
+            if (blown) {
+                ctx.fillStyle = 'rgba(249, 115, 22, 0.3)';
+                ctx.beginPath(); ctx.arc(x, y, rad * 1.75, 0, Math.PI * 2); ctx.fill();
+            }
+            // 8 Metallic Spikes
+            ctx.strokeStyle = blown ? '#fed7aa' : '#cbd5e1';
+            ctx.lineWidth = Math.max(1.5, rad * 0.22);
             ctx.beginPath();
             for (let k = 0; k < 4; k++) {
                 const a = k * Math.PI / 4;
-                ctx.moveTo(x - Math.cos(a) * rad * 1.45, y - Math.sin(a) * rad * 1.45);
-                ctx.lineTo(x + Math.cos(a) * rad * 1.45, y + Math.sin(a) * rad * 1.45);
+                ctx.moveTo(x - Math.cos(a) * rad * 1.5, y - Math.sin(a) * rad * 1.5);
+                ctx.lineTo(x + Math.cos(a) * rad * 1.5, y + Math.sin(a) * rad * 1.5);
             }
             ctx.stroke();
-            ctx.fillStyle = blown ? '#fecaca' : '#0f172a';
-            ctx.beginPath();
-            ctx.arc(x, y, rad, 0, Math.PI * 2);
-            ctx.fill();
+
+            // 3D-shaded Sphere Core
+            ctx.fillStyle = blown ? '#f97316' : '#0f172a';
+            ctx.beginPath(); ctx.arc(x, y, rad * 1.05, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = blown ? '#fef08a' : '#475569';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Specular gleam
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+            ctx.beginPath(); ctx.arc(x - rad * 0.34, y - rad * 0.34, rad * 0.25, 0, Math.PI * 2); ctx.fill();
+
+            // Pulsing Red Hazard LED
+            const ledAlpha = blown ? 1 : (0.55 + 0.45 * Math.sin(pulseT * 1.4));
+            ctx.fillStyle = blown ? '#fef08a' : `rgba(244, 63, 94, ${ledAlpha})`;
+            ctx.beginPath(); ctx.arc(x, y, rad * 0.32, 0, Math.PI * 2); ctx.fill();
             ctx.lineWidth = 1;
         }
 
-        drawFlag(ctx, x, y, s) {
+        drawFlag(ctx, x, y, s, pulseT = 0) {
+            // Pedestal Base
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.ellipse(x, y + s * 0.85, s * 0.55, s * 0.22, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pole
             ctx.strokeStyle = '#e2e8f0';
             ctx.lineWidth = Math.max(1.5, s * 0.18);
             ctx.beginPath();
-            ctx.moveTo(x - s * 0.3, y + s);
-            ctx.lineTo(x - s * 0.3, y - s);
+            ctx.moveTo(x - s * 0.25, y + s * 0.85);
+            ctx.lineTo(x - s * 0.25, y - s * 0.95);
             ctx.stroke();
+
+            // Dual-tone Cyber Pennant Flag
+            const flutter = Math.sin(pulseT + x * 0.1) * s * 0.08;
             ctx.fillStyle = '#f43f5e';
             ctx.beginPath();
-            ctx.moveTo(x - s * 0.3, y - s);
-            ctx.lineTo(x + s * 0.9, y - s * 0.4);
-            ctx.lineTo(x - s * 0.3, y + s * 0.2);
+            ctx.moveTo(x - s * 0.25, y - s * 0.95);
+            ctx.lineTo(x + s * 0.85, y - s * 0.42 + flutter);
+            ctx.lineTo(x - s * 0.25, y + s * 0.12);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#fda4af';
+            ctx.beginPath();
+            ctx.moveTo(x - s * 0.25, y - s * 0.95);
+            ctx.lineTo(x + s * 0.45, y - s * 0.62 + flutter * 0.5);
+            ctx.lineTo(x - s * 0.25, y - s * 0.4);
             ctx.closePath();
             ctx.fill();
             ctx.lineWidth = 1;

@@ -640,7 +640,8 @@ body {
     pointer-events: none;
 }
 
-.toast-msg.show {
+.toast-msg.show,
+.toast-msg.active {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
 }

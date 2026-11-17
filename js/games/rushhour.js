@@ -396,6 +396,14 @@
             this.canvas.className = 'game-canvas';
             if (this.canvas.style) this.canvas.style.touchAction = 'none';
             this.ctx = this.canvas.getContext('2d');
+            if (this.ctx) {
+                for (const m of ['closePath', 'translate', 'rotate', 'scale', 'ellipse', 'setTransform']) {
+                    if (!this.ctx[m]) this.ctx[m] = () => {};
+                }
+                for (const g of ['createLinearGradient', 'createRadialGradient']) {
+                    if (!this.ctx[g]) this.ctx[g] = () => ({ addColorStop() {} });
+                }
+            }
             this.container.appendChild(this.canvas);
 
             const root = document.createElement('div');
@@ -461,6 +469,76 @@
             const boardSize = this.cellSize * GRID;
             this.boardOffset.x = Math.floor((w - boardSize) / 2);
             this.boardOffset.y = hudH + Math.max(8, Math.floor((h - hudH - boardSize) / 2));
+            this.buildBgCache(w, h);
+        }
+
+        buildBgCache(w, h) {
+            if (typeof document === 'undefined' || !document.createElement) return;
+            const bg = document.createElement('canvas');
+            bg.width = w; bg.height = h;
+            const g = bg.getContext('2d');
+            if (!g || !g.createRadialGradient) return;
+
+            const rad = g.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, Math.max(w, h) * 0.72);
+            rad.addColorStop(0, '#16213a');
+            rad.addColorStop(1, '#060913');
+            g.fillStyle = rad;
+            g.fillRect(0, 0, w, h);
+
+            const cs = this.cellSize;
+            const ox = this.boardOffset.x, oy = this.boardOffset.y;
+            const bs = cs * GRID;
+
+            // Outer 2.5D Curb Apron
+            g.fillStyle = '#070b14';
+            if (g.roundRect) {
+                g.beginPath(); g.roundRect(ox - 12, oy - 10, bs + 24, bs + 26, 16); g.fill();
+            } else {
+                g.fillRect(ox - 12, oy - 10, bs + 24, bs + 26);
+            }
+            g.fillStyle = '#0f172a';
+            g.strokeStyle = 'rgba(129, 140, 248, 0.4)';
+            g.lineWidth = 3;
+            if (g.roundRect) {
+                g.beginPath(); g.roundRect(ox - 8, oy - 8, bs + 16, bs + 16, 14); g.fill(); g.stroke();
+            } else {
+                g.fillRect(ox - 8, oy - 8, bs + 16, bs + 16); g.strokeRect(ox - 8, oy - 8, bs + 16, bs + 16);
+            }
+
+            // Asphalt Tiles & Subtle Speckles
+            for (let r = 0; r < GRID; r++) {
+                for (let c = 0; c < GRID; c++) {
+                    const tx = ox + c * cs, ty = oy + r * cs;
+                    g.fillStyle = (r + c) % 2 ? '#162036' : '#1a2540';
+                    g.fillRect(tx, ty, cs, cs);
+                    g.fillStyle = 'rgba(255,255,255,0.03)';
+                    g.fillRect(tx + 4, ty + 4, 2, 2);
+                    g.fillRect(tx + cs - 8, ty + cs - 9, 2, 2);
+                }
+            }
+
+            // Parking Stall Grid Markings
+            g.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+            g.lineWidth = 1;
+            for (let i = 1; i < GRID; i++) {
+                g.beginPath();
+                g.moveTo(ox + i * cs, oy + 2); g.lineTo(ox + i * cs, oy + bs - 2);
+                g.moveTo(ox + 2, oy + i * cs); g.lineTo(ox + bs - 2, oy + i * cs);
+                g.stroke();
+            }
+
+            // Highlighted Exit Lane
+            g.fillStyle = 'rgba(239, 68, 68, 0.09)';
+            g.fillRect(ox, oy + EXIT_ROW * cs, bs, cs);
+            g.fillStyle = 'rgba(239, 68, 68, 0.25)';
+            g.fillRect(ox, oy + EXIT_ROW * cs, bs, 2);
+            g.fillRect(ox, oy + (EXIT_ROW + 1) * cs - 2, bs, 2);
+
+            // Exit Curb Gap
+            g.fillStyle = '#060913';
+            g.fillRect(ox + bs + 1, oy + EXIT_ROW * cs + 3, 12, cs - 6);
+
+            this.bgCanvas = bg;
         }
 
         /* ------------------------------ levels ------------------------------ */
@@ -939,11 +1017,15 @@
             const bs = cs * GRID;
 
             ctx.clearRect(0, 0, W, H);
-            const bg = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, Math.max(W, H) * 0.7);
-            bg.addColorStop(0, '#16213a');
-            bg.addColorStop(1, '#070b14');
-            ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, W, H);
+            if (this.bgCanvas && ctx.drawImage && !(this.shake > 0.1 || this.fade > 0.01)) {
+                ctx.drawImage(this.bgCanvas, 0, 0);
+            } else {
+                const bg = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, Math.max(W, H) * 0.7);
+                bg.addColorStop(0, '#16213a');
+                bg.addColorStop(1, '#070b14');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, W, H);
+            }
 
             ctx.save();
             if (this.shake > 0.1) ctx.translate((Math.random() - 0.5) * this.shake * 2, (Math.random() - 0.5) * this.shake * 2);
@@ -952,27 +1034,31 @@
             ctx.scale(sc, sc);
             ctx.translate(-W / 2, -(oy + bs / 2));
 
-            // Board
-            ctx.fillStyle = '#0f172a';
-            ctx.strokeStyle = 'rgba(129,140,248,0.35)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.roundRect(ox - 8, oy - 8, bs + 16, bs + 16, 14);
-            ctx.fill();
-            ctx.stroke();
-
-            for (let r = 0; r < GRID; r++) {
-                for (let c = 0; c < GRID; c++) {
-                    ctx.fillStyle = (r + c) % 2 ? '#162036' : '#1a2540';
-                    ctx.fillRect(ox + c * cs, oy + r * cs, cs, cs);
+            if (!this.bgCanvas || !ctx.drawImage || this.shake > 0.1 || this.fade > 0.01) {
+                if (this.bgCanvas && ctx.drawImage) {
+                    ctx.drawImage(this.bgCanvas, 0, 0);
+                } else {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.strokeStyle = 'rgba(129,140,248,0.35)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.roundRect(ox - 8, oy - 8, bs + 16, bs + 16, 14);
+                    ctx.fill();
+                    ctx.stroke();
+                    for (let r = 0; r < GRID; r++) {
+                        for (let c = 0; c < GRID; c++) {
+                            ctx.fillStyle = (r + c) % 2 ? '#162036' : '#1a2540';
+                            ctx.fillRect(ox + c * cs, oy + r * cs, cs, cs);
+                        }
+                    }
+                    ctx.fillStyle = 'rgba(239,68,68,0.07)';
+                    ctx.fillRect(ox, oy + EXIT_ROW * cs, bs, cs);
                 }
             }
-            ctx.fillStyle = 'rgba(239,68,68,0.07)';
-            ctx.fillRect(ox, oy + EXIT_ROW * cs, bs, cs);
 
-            // Exit marker
+            // Exit marker (animated beacon)
             const pulse = 0.6 + 0.4 * Math.sin(this.time * 4);
-            ctx.fillStyle = `rgba(16,185,129,${0.5 + 0.5 * pulse})`;
+            ctx.fillStyle = `rgba(16,185,129,${0.45 + 0.45 * pulse})`;
             ctx.beginPath();
             ctx.roundRect(ox + bs + 3, oy + EXIT_ROW * cs + 8, 8, cs - 16, 3);
             ctx.fill();
@@ -1008,54 +1094,162 @@
             const horiz = v.dir === 'H';
             const vw = (horiz ? v.len * cs : cs) - pad2 * 2;
             const vh = (!horiz ? v.len * cs : cs) - pad2 * 2;
+            const L = Math.max(vw, vh);
+            const W = Math.min(vw, vh);
+            const cx = vx + vw / 2;
+            const cy = vy + vh / 2;
 
-            ctx.save();
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = selected ? 18 : 8;
-            ctx.shadowOffsetY = selected ? 6 : 3;
-            const g = horiz ? ctx.createLinearGradient(vx, vy, vx, vy + vh) : ctx.createLinearGradient(vx, vy, vx + vw, vy);
-            g.addColorStop(0, shade(v.color, 35));
-            g.addColorStop(1, shade(v.color, -35));
-            ctx.fillStyle = g;
+            // Fast layered 2.5D Drop Shadow (zero shadowBlur overhead)
+            const sOff = selected ? 6 : 3;
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.52)';
             ctx.beginPath();
-            ctx.roundRect(vx, vy, vw, vh, v.fixed ? 8 : 9);
+            ctx.roundRect(vx + sOff * 0.6, vy + sOff, vw, vh, v.fixed ? 9 : 10);
             ctx.fill();
-            ctx.restore();
 
             if (v.fixed) {
-                ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                // 2.5D Steel Bollard / Concrete Barrier Block
+                const g = ctx.createLinearGradient(vx, vy, vx, vy + vh);
+                g.addColorStop(0, '#64748b');
+                g.addColorStop(1, '#1e293b');
+                ctx.fillStyle = g;
                 ctx.beginPath();
-                ctx.arc(vx + vw * 0.35, vy + vh * 0.35, vw * 0.14, 0, Math.PI * 2);
+                ctx.roundRect(vx, vy, vw, vh, 9);
+                ctx.fill();
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Hazard warning core
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(cx, cy, W * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(cx, cy, W * 0.11, 0, Math.PI * 2);
                 ctx.fill();
                 return;
             }
 
-            ctx.strokeStyle = selected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)';
-            ctx.lineWidth = selected ? 2 : 1;
+            ctx.save();
+            ctx.translate(cx, cy);
+            if (!horiz) ctx.rotate(Math.PI / 2);
+
+            const hx = -L / 2, hy = -W / 2;
+
+            // Headlight projection cones for red hero car or selected vehicle
+            if (v.isRed || selected) {
+                ctx.fillStyle = v.isRed ? 'rgba(254, 240, 138, 0.13)' : 'rgba(254, 240, 138, 0.07)';
+                ctx.beginPath();
+                ctx.moveTo(L / 2, -W * 0.34);
+                ctx.lineTo(L / 2 + cs * 0.55, -W * 0.58);
+                ctx.lineTo(L / 2 + cs * 0.55, W * 0.58);
+                ctx.lineTo(L / 2, W * 0.34);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // 4 Side Tires peeking out slightly
+            const wheelW = Math.max(6, L * 0.14);
+            const wheelH = 4;
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(hx + L * 0.16, hy - 2, wheelW, wheelH);
+            ctx.fillRect(hx + L * 0.16, hy + W - 2, wheelW, wheelH);
+            ctx.fillRect(hx + L * 0.72, hy - 2, wheelW, wheelH);
+            ctx.fillRect(hx + L * 0.72, hy + W - 2, wheelW, wheelH);
+
+            if (v.len === 3) {
+                // 2.5D Heavy Cargo Truck (Trailer + Cab)
+                const cabW = L * 0.28;
+                const trailerW = L - cabW - 3;
+
+                // Cargo Trailer
+                const tg = ctx.createLinearGradient(0, hy, 0, hy + W);
+                tg.addColorStop(0, shade(v.color, 30));
+                tg.addColorStop(0.5, v.color);
+                tg.addColorStop(1, shade(v.color, -40));
+                ctx.fillStyle = tg;
+                ctx.beginPath();
+                ctx.roundRect(hx, hy, trailerW, W, 5);
+                ctx.fill();
+
+                // Ribbed roof ribs on trailer
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+                for (let rx = hx + 8; rx < hx + trailerW - 6; rx += 9) {
+                    ctx.fillRect(rx, hy + 4, 3, W - 8);
+                }
+
+                // Cab
+                ctx.fillStyle = shade(v.color, 18);
+                ctx.beginPath();
+                ctx.roundRect(hx + trailerW + 3, hy + 2, cabW, W - 4, 6);
+                ctx.fill();
+
+                // Truck Windshield
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.roundRect(hx + trailerW + cabW * 0.45, hy + 5, cabW * 0.4, W - 10, 3);
+                ctx.fill();
+            } else {
+                // 2.5D Sport Car / Sedan Body
+                const bg = ctx.createLinearGradient(0, hy, 0, hy + W);
+                bg.addColorStop(0, shade(v.color, 40));
+                bg.addColorStop(0.45, v.color);
+                bg.addColorStop(1, shade(v.color, -40));
+                ctx.fillStyle = bg;
+                ctx.beginPath();
+                ctx.roundRect(hx, hy, L, W, 9);
+                ctx.fill();
+
+                // Hero Red Car twin racing stripes + carbon hood vent + GT spoiler
+                if (v.isRed) {
+                    ctx.fillStyle = 'rgba(248, 250, 252, 0.85)';
+                    ctx.fillRect(hx + 4, -4, L - 8, 2.5);
+                    ctx.fillRect(hx + 4, 1.5, L - 8, 2.5);
+                    // Rear GT Spoiler Wing
+                    ctx.fillStyle = '#18181b';
+                    ctx.beginPath();
+                    ctx.roundRect(hx + 2, hy + 2, 5, W - 4, 2);
+                    ctx.fill();
+                }
+
+                // Cabin Glass & Roof
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.roundRect(hx + L * 0.24, hy + W * 0.16, L * 0.48, W * 0.68, 5);
+                ctx.fill();
+                // Roof panel
+                ctx.fillStyle = shade(v.color, 25);
+                ctx.beginPath();
+                ctx.roundRect(hx + L * 0.28, hy + W * 0.22, L * 0.26, W * 0.56, 3);
+                ctx.fill();
+                // Specular glass highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+                ctx.fillRect(hx + L * 0.58, hy + W * 0.22, L * 0.08, W * 0.35);
+
+                // Side mirrors
+                ctx.fillStyle = shade(v.color, 10);
+                ctx.fillRect(hx + L * 0.56, hy - 3, 4, 3);
+                ctx.fillRect(hx + L * 0.56, hy + W, 4, 3);
+            }
+
+            // Selection / Body Rim Outline
+            ctx.strokeStyle = selected ? '#ffffff' : 'rgba(255,255,255,0.28)';
+            ctx.lineWidth = selected ? 2.2 : 1;
             ctx.beginPath();
-            ctx.roundRect(vx, vy, vw, vh, 9);
+            ctx.roundRect(hx, hy, L, W, 9);
             ctx.stroke();
 
-            // Windshield / roof
-            ctx.fillStyle = 'rgba(15,23,42,0.55)';
-            const cw = horiz ? vw * (v.len === 3 ? 0.38 : 0.42) : vw * 0.62;
-            const ch = !horiz ? vh * (v.len === 3 ? 0.38 : 0.42) : vh * 0.62;
-            const cx0 = horiz ? vx + vw * 0.3 : vx + (vw - cw) / 2;
-            const cy0 = !horiz ? vy + vh * 0.3 : vy + (vh - ch) / 2;
-            ctx.beginPath();
-            ctx.roundRect(cx0, cy0, cw, ch, 5);
-            ctx.fill();
-
-            // Headlights at the front (right / bottom)
-            ctx.fillStyle = '#fde68a';
+            // Front Headlights & Rear Tail Lights
             const lr = Math.max(2, cs * 0.045);
-            if (horiz) {
-                ctx.fillRect(vx + vw - lr * 2, vy + vh * 0.18, lr * 1.5, lr * 2);
-                ctx.fillRect(vx + vw - lr * 2, vy + vh * 0.82 - lr * 2, lr * 1.5, lr * 2);
-            } else {
-                ctx.fillRect(vx + vw * 0.18, vy + vh - lr * 2, lr * 2, lr * 1.5);
-                ctx.fillRect(vx + vw * 0.82 - lr * 2, vy + vh - lr * 2, lr * 2, lr * 1.5);
-            }
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(hx + L - lr * 1.8, hy + W * 0.16, lr * 1.5, lr * 2.1);
+            ctx.fillRect(hx + L - lr * 1.8, hy + W * 0.84 - lr * 2.1, lr * 1.5, lr * 2.1);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(hx + 1, hy + W * 0.18, lr, lr * 1.8);
+            ctx.fillRect(hx + 1, hy + W * 0.82 - lr * 1.8, lr, lr * 1.8);
+
+            ctx.restore();
         }
 
         /* ------------------------------ self-test & bot ------------------------------ */

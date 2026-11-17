@@ -159,6 +159,11 @@
             this.canvas = document.createElement('canvas');
             this.canvas.className = 'game-canvas';
             this.ctx = this.canvas.getContext('2d');
+            if (this.ctx) {
+                for (const m of ['closePath', 'translate', 'rotate', 'scale', 'ellipse', 'setTransform']) {
+                    if (!this.ctx[m]) this.ctx[m] = () => {};
+                }
+            }
             this.container.appendChild(this.canvas);
 
             this.buildUI();
@@ -896,10 +901,12 @@
             const oy = Math.floor(this.headerH + (ch - this.headerH - this.mapH * ts) / 2 + sy);
             const p = this.player;
             const hue = (210 + this.floor * 12) % 360;
-            const wallCol = `hsl(${hue},28%,9%)`;
+            const wallTop = `hsl(${hue},26%,12%)`;
+            const wallRim = `hsl(${hue},32%,20%)`;
+            const wallFront = `hsl(${hue},24%,8%)`;
             const floorCol = `hsl(${hue},18%,16%)`;
-            const floorAlt = `hsl(${hue},18%,18%)`;
-            const edgeCol = `hsl(${hue},35%,24%)`;
+            const floorAlt = `hsl(${hue},18%,19%)`;
+            const seamCol = `hsl(${hue},18%,11%)`;
             const R = 7;
 
             // Licht: 1 nahe am Spieler, faellt zum Rand ab; bereits Entdecktes bleibt gedimmt
@@ -910,101 +917,233 @@
                     if (!this.revealed[y][x]) continue;
                     const wall = this.grid[y][x] === 1;
                     const tx = ox + x * ts, ty = oy + y * ts;
-                    ctx.fillStyle = wall ? wallCol : ((x + y) & 1 ? floorAlt : floorCol);
-                    ctx.fillRect(tx, ty, ts, ts);
-                    if (wall && y + 1 < this.mapH && this.grid[y + 1][x] === 0) {
-                        ctx.fillStyle = edgeCol;
-                        ctx.fillRect(tx, ty + ts - 3, ts, 3);
+                    const lVal = light(x, y);
+
+                    if (wall) {
+                        ctx.fillStyle = wallTop;
+                        ctx.fillRect(tx, ty, ts, ts);
+                        if (y + 1 < this.mapH && this.grid[y + 1][x] === 0) {
+                            // 2.5D Extruded Stone Wall Front & Brick Mortar
+                            const fh = Math.max(4, Math.floor(ts * 0.28));
+                            ctx.fillStyle = wallRim;
+                            ctx.fillRect(tx, ty + ts - fh - 2, ts, 2);
+                            ctx.fillStyle = wallFront;
+                            ctx.fillRect(tx, ty + ts - fh, ts, fh);
+                            ctx.fillStyle = seamCol;
+                            ctx.fillRect(tx + Math.floor(ts * 0.48), ty + ts - fh, 1, fh);
+
+                            // Deterministic Wall Sconce Torch on select south-facing walls
+                            if (((x * 17 + y * 31) % 19) === 0 && lVal > 0.1) {
+                                const fx = tx + ts * 0.5, fy = ty + ts - fh * 0.55;
+                                const flicker = 0.8 + Math.sin(this.time * 14 + x) * 0.2;
+                                ctx.fillStyle = `rgba(249, 115, 22, ${0.22 * flicker})`;
+                                ctx.beginPath(); ctx.arc(fx, fy, ts * 0.65, 0, Math.PI * 2); ctx.fill();
+                                ctx.fillStyle = '#fb923c';
+                                ctx.beginPath(); ctx.arc(fx, fy, ts * 0.12 * flicker, 0, Math.PI * 2); ctx.fill();
+                                ctx.fillStyle = '#fef08a';
+                                ctx.beginPath(); ctx.arc(fx, fy, ts * 0.06, 0, Math.PI * 2); ctx.fill();
+                            }
+                        }
+                    } else {
+                        // Flagstone Dungeon Floor + Subtle Mortar & Crack Details
+                        ctx.fillStyle = (x + y) & 1 ? floorAlt : floorCol;
+                        ctx.fillRect(tx, ty, ts, ts);
+                        ctx.fillStyle = seamCol;
+                        ctx.fillRect(tx, ty, ts, 1);
+                        ctx.fillRect(tx, ty, 1, ts);
+                        if (((x * 7 + y * 13) % 5) === 0) {
+                            ctx.fillRect(tx + ts * 0.25, ty + ts * 0.5, ts * 0.35, 1);
+                        }
                     }
-                    const dark = 0.82 - light(x, y) * 0.82;
-                    ctx.globalAlpha = Math.max(dark, 0.35);
-                    ctx.fillStyle = '#000';
+
+                    const dark = 0.82 - lVal * 0.82;
+                    ctx.globalAlpha = Math.max(dark, 0.32);
+                    ctx.fillStyle = '#02040a';
                     ctx.fillRect(tx, ty, ts, ts);
                     ctx.globalAlpha = 1;
                 }
             }
 
-            // Treppe (pulsierend)
+            // 3D Stepped Rune Staircase
             if (this.revealed[this.stairs.y] && this.revealed[this.stairs.y][this.stairs.x]) {
                 const pulse = 0.5 + 0.5 * Math.sin(this.time * 4);
                 const cx = ox + (this.stairs.x + 0.5) * ts, cy = oy + (this.stairs.y + 0.5) * ts;
-                ctx.globalAlpha = 0.15 + pulse * 0.15;
+                ctx.globalAlpha = 0.18 + pulse * 0.18;
                 ctx.fillStyle = '#10b981';
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.75, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.8, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
-                ctx.fillRect(cx - ts * 0.3, cy - ts * 0.3, ts * 0.6, ts * 0.6);
                 ctx.fillStyle = '#064e3b';
-                ctx.fillRect(cx - ts * 0.2, cy - ts * 0.2, ts * 0.4, ts * 0.12);
-                ctx.fillRect(cx - ts * 0.2, cy + ts * 0.02, ts * 0.4, ts * 0.12);
+                ctx.fillRect(cx - ts * 0.34, cy - ts * 0.34, ts * 0.68, ts * 0.68);
+                for (let step = 0; step < 3; step++) {
+                    ctx.fillStyle = step === 0 ? '#34d399' : (step === 1 ? '#10b981' : '#059669');
+                    const sy0 = cy - ts * 0.26 + step * ts * 0.18;
+                    ctx.fillRect(cx - ts * 0.26, sy0, ts * 0.52, ts * 0.14);
+                }
             }
 
-            // Items
+            // 2.5D Treasure & Potions
             for (const it of this.items) {
                 if (!this.revealed[it.y][it.x]) continue;
-                const cx = ox + (it.x + 0.5) * ts, cy = oy + (it.y + 0.5) * ts + Math.sin(this.time * 4 + it.x) * 2;
-                ctx.fillStyle = it.type === 'gold' ? '#fbbf24' : it.type === 'heart' ? '#f43f5e' : '#38bdf8';
-                ctx.globalAlpha = 0.25;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.38, 0, Math.PI * 2); ctx.fill();
+                const cx = ox + (it.x + 0.5) * ts;
+                const cy = oy + (it.y + 0.5) * ts + Math.sin(this.time * 4 + it.x) * 2;
+                const glowCol = it.type === 'gold' ? '#fbbf24' : it.type === 'heart' ? '#f43f5e' : '#38bdf8';
+                ctx.fillStyle = glowCol;
+                ctx.globalAlpha = 0.22;
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.42, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.2, 0, Math.PI * 2); ctx.fill();
+
+                if (it.type === 'gold') {
+                    // Gold Coin Stack
+                    ctx.fillStyle = '#d97706';
+                    ctx.beginPath(); ctx.arc(cx - ts * 0.08, cy + ts * 0.05, ts * 0.14, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath(); ctx.arc(cx + ts * 0.06, cy, ts * 0.15, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fef08a';
+                    ctx.beginPath(); ctx.arc(cx + ts * 0.02, cy - ts * 0.04, ts * 0.06, 0, Math.PI * 2); ctx.fill();
+                } else {
+                    // Potion Vial
+                    ctx.fillStyle = glowCol;
+                    ctx.beginPath(); ctx.arc(cx, cy + ts * 0.05, ts * 0.19, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillRect(cx - ts * 0.06, cy - ts * 0.2, ts * 0.12, ts * 0.1);
+                    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+                    ctx.beginPath(); ctx.arc(cx - ts * 0.06, cy, ts * 0.05, 0, Math.PI * 2); ctx.fill();
+                }
             }
 
-            // Gegner (nur im Sichtfeld)
+            // 2.5D Monster Models (nur im Sichtfeld)
             for (const en of this.enemies) {
                 if (light(en.x, en.y) <= 0) continue;
                 const t = ENEMY_TYPES[en.type];
                 const cx = ox + (en.px + 0.5) * ts, cy = oy + (en.py + 0.5) * ts;
-                ctx.globalAlpha = 0.25;
+                const rad = ts * t.radius;
+                const fill = en.flash > 0 ? '#ffffff' : t.color;
+
+                // Shadow & Aura
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.beginPath(); ctx.arc(cx, cy + rad * 0.35, rad * 0.95, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.22;
                 ctx.fillStyle = t.color;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * (t.radius + 0.15), 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, cy, rad * 1.35, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
-                ctx.fillStyle = en.flash > 0 ? '#ffffff' : t.color;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * t.radius, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(cx - ts * 0.14, cy - ts * 0.08, ts * 0.08, ts * 0.08);
-                ctx.fillRect(cx + ts * 0.06, cy - ts * 0.08, ts * 0.08, ts * 0.08);
+
+                if (en.type === 'bat') {
+                    // Animated Shadow Bat
+                    const flap = Math.sin(this.time * 16 + en.x) * rad * 0.5;
+                    ctx.fillStyle = fill;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy - rad * 0.2);
+                    ctx.lineTo(cx - rad * 1.4, cy - rad * 0.4 + flap);
+                    ctx.lineTo(cx - rad * 0.6, cy + rad * 0.45);
+                    ctx.lineTo(cx, cy + rad * 0.25);
+                    ctx.lineTo(cx + rad * 0.6, cy + rad * 0.45);
+                    ctx.lineTo(cx + rad * 1.4, cy - rad * 0.4 + flap);
+                    ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#fef08a';
+                    ctx.fillRect(cx - rad * 0.35, cy - rad * 0.1, rad * 0.22, rad * 0.22);
+                    ctx.fillRect(cx + rad * 0.13, cy - rad * 0.1, rad * 0.22, rad * 0.22);
+                } else if (en.type === 'brute') {
+                    // Horned Magma Brute
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.beginPath();
+                    ctx.moveTo(cx - rad * 0.6, cy - rad * 0.5); ctx.lineTo(cx - rad * 1.05, cy - rad * 1.1); ctx.lineTo(cx - rad * 0.2, cy - rad * 0.8);
+                    ctx.moveTo(cx + rad * 0.6, cy - rad * 0.5); ctx.lineTo(cx + rad * 1.05, cy - rad * 1.1); ctx.lineTo(cx + rad * 0.2, cy - rad * 0.8);
+                    ctx.fill();
+                    ctx.fillStyle = fill;
+                    ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#7c2d12';
+                    ctx.fillRect(cx - rad * 0.7, cy + rad * 0.1, rad * 1.4, rad * 0.35);
+                    ctx.fillStyle = '#fef08a';
+                    ctx.fillRect(cx - rad * 0.48, cy - rad * 0.28, rad * 0.3, rad * 0.22);
+                    ctx.fillRect(cx + rad * 0.18, cy - rad * 0.28, rad * 0.3, rad * 0.22);
+                } else {
+                    // Horned Goblin / Skeleton Warrior
+                    ctx.fillStyle = fill;
+                    ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillRect(cx + rad * 0.65, cy - rad * 0.75, Math.max(2, rad * 0.22), rad * 1.1);
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(cx - rad * 0.45, cy - rad * 0.2, rad * 0.26, rad * 0.26);
+                    ctx.fillRect(cx + rad * 0.18, cy - rad * 0.2, rad * 0.26, rad * 0.26);
+                }
+
                 if (en.hp < en.maxHp) {
-                    ctx.fillStyle = 'rgba(0,0,0,.6)';
-                    ctx.fillRect(cx - ts * 0.4, cy - ts * 0.6, ts * 0.8, 3);
+                    ctx.fillStyle = 'rgba(0,0,0,.65)';
+                    ctx.fillRect(cx - ts * 0.4, cy - ts * 0.62, ts * 0.8, 3.5);
                     ctx.fillStyle = '#22c55e';
-                    ctx.fillRect(cx - ts * 0.4, cy - ts * 0.6, ts * 0.8 * clamp(en.hp / en.maxHp, 0, 1), 3);
+                    ctx.fillRect(cx - ts * 0.4, cy - ts * 0.62, ts * 0.8 * clamp(en.hp / en.maxHp, 0, 1), 3.5);
                 }
             }
 
-            // Schwertschlag
+            // Sword Slash Crescent
             for (const s of this.swings) {
                 const cx = ox + (s.x + 0.5) * ts, cy = oy + (s.y + 0.5) * ts;
-                ctx.globalAlpha = clamp(s.t / 0.14, 0, 1);
-                ctx.strokeStyle = '#e2e8f0';
-                ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.4, 0, Math.PI * 2); ctx.stroke();
+                const a = clamp(s.t / 0.14, 0, 1);
+                ctx.globalAlpha = a * 0.45;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.46, 0, Math.PI * 2); ctx.stroke();
+                ctx.globalAlpha = a;
+                ctx.strokeStyle = '#f8fafc';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.42, 0, Math.PI * 2); ctx.stroke();
                 ctx.globalAlpha = 1;
             }
+            ctx.lineWidth = 1;
 
-            // Feuerbaelle
+            // Fireballs
             for (const pr of this.projectiles) {
                 const cx = ox + (pr.x + 0.5 + pr.dx * pr.acc) * ts, cy = oy + (pr.y + 0.5 + pr.dy * pr.acc) * ts;
                 ctx.fillStyle = '#f97316';
-                ctx.globalAlpha = 0.3;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.4, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.35;
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.45, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
-                ctx.fillStyle = '#fde047';
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.2, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fb923c';
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.26, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.13, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Spieler
+            // 2.5D Spellsword Hero
             {
                 const cx = ox + (p.px + 0.5) * ts, cy = oy + (p.py + 0.5) * ts;
                 const blink = p.invuln > 0 && Math.floor(this.time * 20) % 2 === 0;
+
+                // Torch Aura
                 ctx.fillStyle = '#22d3ee';
-                ctx.globalAlpha = 0.2;
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.65, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.16;
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.72, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = blink ? 0.35 : 1;
-                ctx.fillStyle = '#f1f5f9';
-                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.34, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#6366f1';
-                ctx.beginPath(); ctx.arc(cx + p.dir.x * ts * 0.2, cy + p.dir.y * ts * 0.2, ts * 0.1, 0, Math.PI * 2); ctx.fill();
+
+                // Ground Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.beginPath(); ctx.arc(cx, cy + ts * 0.18, ts * 0.34, 0, Math.PI * 2); ctx.fill();
+
+                // Cloak & Armored Shoulders
+                ctx.fillStyle = '#4f46e5';
+                ctx.beginPath(); ctx.arc(cx, cy + ts * 0.04, ts * 0.34, 0, Math.PI * 2); ctx.fill();
+                // Steel Broadsword angled in front
+                const ang = Math.atan2(p.dir.y, p.dir.x);
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = Math.max(2, ts * 0.1);
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(ang + 0.5) * ts * 0.2, cy + Math.sin(ang + 0.5) * ts * 0.2);
+                ctx.lineTo(cx + Math.cos(ang + 0.2) * ts * 0.52, cy + Math.sin(ang + 0.2) * ts * 0.52);
+                ctx.stroke();
+
+                // Arcane Flame Orb in offhand
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(cx + Math.cos(ang - 0.8) * ts * 0.28, cy + Math.sin(ang - 0.8) * ts * 0.28, ts * 0.1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Hooded Helmet & Glowing Eyes
+                ctx.fillStyle = '#e2e8f0';
+                ctx.beginPath(); ctx.arc(cx, cy, ts * 0.24, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath(); ctx.arc(cx + p.dir.x * ts * 0.14, cy + p.dir.y * ts * 0.14, ts * 0.09, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
+                ctx.lineWidth = 1;
             }
 
             // Partikel

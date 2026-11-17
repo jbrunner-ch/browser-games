@@ -214,6 +214,14 @@
             this.canvas = document.createElement('canvas');
             this.canvas.className = 'game-canvas';
             this.ctx = this.canvas.getContext('2d');
+            if (this.ctx) {
+                for (const m of ['closePath', 'translate', 'rotate', 'scale', 'ellipse', 'setTransform']) {
+                    if (!this.ctx[m]) this.ctx[m] = () => {};
+                }
+                for (const g of ['createLinearGradient', 'createRadialGradient']) {
+                    if (!this.ctx[g]) this.ctx[g] = () => ({ addColorStop() {} });
+                }
+            }
             this.root.appendChild(this.canvas);
 
             this.buildUI();
@@ -371,6 +379,56 @@
             this.paddle.y = this.canvas.height - 36;
             this.layoutBricks();
             this.paddle.x = clamp(this.paddle.x, 8, Math.max(8, this.canvas.width - this.paddle.w - 8));
+            this.buildBgCache(this.canvas.width, this.canvas.height);
+        }
+
+        buildBgCache(W, H) {
+            if (typeof document === 'undefined' || !document.createElement) return;
+            const bg = document.createElement('canvas');
+            bg.width = W; bg.height = H;
+            const g = bg.getContext('2d');
+            if (!g || !g.createLinearGradient) return;
+
+            const grad = g.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#070b18');
+            grad.addColorStop(0.6, '#0f172a');
+            grad.addColorStop(1, '#1e1b4b');
+            g.fillStyle = grad;
+            g.fillRect(0, 0, W, H);
+
+            if (g.createRadialGradient) {
+                const glow = g.createRadialGradient(W / 2, H * 0.72, 10, W / 2, H * 0.72, Math.max(W, H) * 0.55);
+                glow.addColorStop(0, 'rgba(34, 211, 238, 0.14)');
+                glow.addColorStop(0.5, 'rgba(99, 102, 241, 0.08)');
+                glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                g.fillStyle = glow;
+                g.fillRect(0, 0, W, H);
+            }
+
+            // Perspective Synthwave Horizon Grid
+            const hy = Math.floor(H * 0.58);
+            g.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+            g.lineWidth = 1;
+            for (let i = -8; i <= 8; i++) {
+                g.beginPath();
+                g.moveTo(W / 2 + i * 32, hy);
+                g.lineTo(W / 2 + i * 115, H);
+                g.stroke();
+            }
+            for (let row = 0; row < 7; row++) {
+                const t = row / 6;
+                const y = hy + t * t * (H - hy);
+                g.beginPath();
+                g.moveTo(0, y); g.lineTo(W, y);
+                g.stroke();
+            }
+
+            // Side Energy Rails
+            g.fillStyle = 'rgba(56, 189, 248, 0.16)';
+            g.fillRect(0, 0, 4, H);
+            g.fillRect(W - 4, 0, 4, H);
+
+            this.bgCanvas = bg;
         }
 
         layoutBricks() {
@@ -872,86 +930,176 @@
             const ctx = this.ctx;
             const W = this.canvas.width, H = this.canvas.height;
             ctx.save();
-            ctx.fillStyle = '#0b1020';
-            ctx.fillRect(0, 0, W, H);
-            if (ctx.createLinearGradient) {
-                const g = ctx.createLinearGradient(0, 0, 0, H);
-                g.addColorStop(0, '#111a35');
-                g.addColorStop(1, '#070b16');
-                ctx.fillStyle = g;
+            if (this.bgCanvas && ctx.drawImage) {
+                ctx.drawImage(this.bgCanvas, 0, 0);
+            } else {
+                ctx.fillStyle = '#0b1020';
                 ctx.fillRect(0, 0, W, H);
+                if (ctx.createLinearGradient) {
+                    const g = ctx.createLinearGradient(0, 0, 0, H);
+                    g.addColorStop(0, '#111a35');
+                    g.addColorStop(1, '#070b16');
+                    ctx.fillStyle = g;
+                    ctx.fillRect(0, 0, W, H);
+                }
             }
             if (this.shake > 0.05 && ctx.translate) {
                 ctx.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake);
             }
 
-            // Bricks inkl. Einflug-Animation
+            // 2.5D Crystal & Armored Bricks (zero shadowBlur overhead)
             for (const b of this.bricks) {
                 const k = clamp(this.introT * 1.6 - b.r * 0.08 - b.c * 0.01, 0, 1);
                 const e = 1 - Math.pow(1 - k, 3);
-                ctx.globalAlpha = e * (b.hp < b.maxHp ? 0.7 : 1);
-                ctx.shadowColor = this.brickColor(b);
-                ctx.shadowBlur = 8;
-                ctx.fillStyle = this.brickColor(b);
+                const by = b.y - (1 - e) * 40;
+                const col = this.brickColor(b);
+                ctx.globalAlpha = e * (b.hp < b.maxHp ? 0.85 : 1);
+
+                // Drop shadow
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.45)';
                 ctx.beginPath();
-                ctx.roundRect(b.x, b.y - (1 - e) * 40, b.w, b.h, 4);
+                ctx.roundRect(b.x + 1.5, by + 2.5, b.w, b.h, 4);
                 ctx.fill();
-                ctx.shadowBlur = 0;
+
+                // Main brick body
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.roundRect(b.x, by, b.w, b.h, 4);
+                ctx.fill();
+
+                // 2.5D Top Highlight & Bottom Depth Bevel
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.34)';
+                ctx.fillRect(b.x + 2, by + 1, Math.max(0, b.w - 4), 2.5);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+                ctx.fillRect(b.x + 2, by + b.h - 3, Math.max(0, b.w - 4), 2.5);
+
+                // Specular diagonal sheen
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+                ctx.fillRect(b.x + 4, by + 4, b.w * 0.28, 2);
+
+                if (b.type === 'armor' || b.type === 'tough') {
+                    ctx.strokeStyle = b.type === 'tough' ? '#e2e8f0' : '#cbd5e1';
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.roundRect(b.x + 0.5, by + 0.5, b.w - 1, b.h - 1, 4);
+                    ctx.stroke();
+                    // Corner rivets
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(b.x + 3, by + 3, 2, 2);
+                    ctx.fillRect(b.x + b.w - 5, by + 3, 2, 2);
+                    ctx.fillRect(b.x + 3, by + b.h - 5, 2, 2);
+                    ctx.fillRect(b.x + b.w - 5, by + b.h - 5, 2, 2);
+                }
+
+                // Damage Cracks when damaged
+                if (b.hp < b.maxHp) {
+                    ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(b.x + b.w * 0.35, by + 1);
+                    ctx.lineTo(b.x + b.w * 0.48, by + b.h * 0.55);
+                    ctx.lineTo(b.x + b.w * 0.62, by + b.h - 1);
+                    ctx.stroke();
+                }
+
                 if (b.maxHp > 1) {
-                    ctx.fillStyle = 'rgba(15,23,42,.8)';
-                    for (let i = 0; i < b.hp; i++) ctx.fillRect(b.x + 5 + i * 7, b.y - (1 - e) * 40 + b.h / 2 - 2, 5, 4);
+                    ctx.fillStyle = 'rgba(15,23,42,.75)';
+                    for (let i = 0; i < b.hp; i++) ctx.fillRect(b.x + 6 + i * 7, by + b.h / 2 - 2, 4.5, 4);
                 }
                 if (b.type === 'explosive') {
-                    ctx.fillStyle = '#fff';
-                    ctx.fillText('✸', b.x + b.w / 2 - 4, b.y + b.h / 2 + 4);
+                    const pulse = 0.55 + 0.45 * Math.sin(this.time * 9);
+                    ctx.fillStyle = `rgba(254, 240, 138, ${pulse})`;
+                    ctx.beginPath();
+                    ctx.arc(b.x + b.w / 2, by + b.h / 2, 4, 0, Math.PI * 2);
+                    ctx.fill();
                 }
             }
             ctx.globalAlpha = 1;
 
-            // Paddle
+            // 2.5D Cyber Paddle with Laser Cannons & Thrusters
             const p = this.paddle;
-            ctx.shadowColor = p.laserT > 0 ? '#ec4899' : '#22d3ee';
-            ctx.shadowBlur = 14;
-            ctx.fillStyle = p.laserT > 0 ? '#f472b6' : '#e0f2fe';
+            const pCol = p.laserT > 0 ? '#ec4899' : (p.fireT > 0 ? '#f97316' : '#22d3ee');
+            ctx.fillStyle = pCol;
+            ctx.globalAlpha = 0.22;
+            ctx.beginPath();
+            ctx.roundRect(p.x - 4, p.y - 3, p.w + 8, p.h + 6, 9);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // Metallic core
+            if (ctx.createLinearGradient) {
+                const pg = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+                pg.addColorStop(0, '#f8fafc');
+                pg.addColorStop(0.5, p.laserT > 0 ? '#f472b6' : '#38bdf8');
+                pg.addColorStop(1, '#0f172a');
+                ctx.fillStyle = pg;
+            } else {
+                ctx.fillStyle = p.laserT > 0 ? '#f472b6' : '#e0f2fe';
+            }
             ctx.beginPath();
             ctx.roundRect(p.x, p.y, p.w, p.h, 6);
             ctx.fill();
-            ctx.shadowBlur = 0;
 
-            // Powerups
-            const pcol = { multiball: '#22d3ee', laser: '#ec4899', wide: '#a78bfa', fire: '#f97316', life: '#f43f5e' };
-            for (const u of this.powerups) {
-                ctx.fillStyle = pcol[u.type];
-                ctx.shadowColor = pcol[u.type];
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.arc(u.x, u.y, 8, 0, Math.PI * 2);
-                ctx.fill();
+            // Endcaps & center thruster glow
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(p.x + 3, p.y + 1, 7, p.h - 2);
+            ctx.fillRect(p.x + p.w - 10, p.y + 1, 7, p.h - 2);
+            ctx.fillStyle = pCol;
+            ctx.fillRect(p.x + p.w * 0.3, p.y + p.h - 2, p.w * 0.4, 2);
+
+            if (p.laserT > 0) {
+                ctx.fillStyle = '#f472b6';
+                ctx.fillRect(p.x + 4, p.y - 6, 4, 7);
+                ctx.fillRect(p.x + p.w - 8, p.y - 6, 4, 7);
             }
-            ctx.shadowBlur = 0;
 
-            // Laser
-            ctx.fillStyle = '#f472b6';
-            for (const l of this.lasers) ctx.fillRect(l.x - 2, l.y, 4, 12);
+            // 3D-Style Powerup Capsules
+            const pcol = { multiball: '#22d3ee', laser: '#ec4899', wide: '#a78bfa', fire: '#f97316', life: '#f43f5e' };
+            const plabel = { multiball: 'M', laser: 'L', wide: 'W', fire: 'F', life: '♥' };
+            for (const u of this.powerups) {
+                const c = pcol[u.type] || '#38bdf8';
+                ctx.fillStyle = c;
+                ctx.globalAlpha = 0.25;
+                ctx.beginPath(); ctx.arc(u.x, u.y, 13, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.beginPath();
+                ctx.roundRect(u.x - 11, u.y - 7, 22, 14, 7);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fillRect(u.x - 6, u.y - 5, 12, 2);
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(plabel[u.type] || '+', u.x, u.y + 0.5);
+            }
 
-            // Bälle + Trail
+            // Laser Beams (dual-core)
+            for (const l of this.lasers) {
+                ctx.fillStyle = 'rgba(236, 72, 153, 0.45)';
+                ctx.fillRect(l.x - 3, l.y - 2, 6, 16);
+                ctx.fillStyle = '#fdf2f8';
+                ctx.fillRect(l.x - 1.2, l.y, 2.4, 12);
+            }
+
+            // Energy Balls + Plasma Trail
             const fire = p.fireT > 0;
             for (const b of this.balls) {
                 for (let i = 0; i < b.trail.length; i++) {
-                    ctx.globalAlpha = (i / b.trail.length) * 0.35;
-                    ctx.fillStyle = fire ? '#fb923c' : '#67e8f9';
+                    ctx.globalAlpha = (i / b.trail.length) * 0.4;
+                    ctx.fillStyle = fire ? '#fb923c' : '#38bdf8';
                     ctx.beginPath();
-                    ctx.arc(b.trail[i].x, b.trail[i].y, b.r * (i / b.trail.length), 0, Math.PI * 2);
+                    ctx.arc(b.trail[i].x, b.trail[i].y, b.r * (0.4 + 0.6 * i / b.trail.length), 0, Math.PI * 2);
                     ctx.fill();
                 }
+                ctx.globalAlpha = 0.35;
+                ctx.fillStyle = fire ? '#f97316' : '#22d3ee';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1;
-                ctx.shadowColor = fire ? '#f97316' : '#22d3ee';
-                ctx.shadowBlur = 12;
-                ctx.fillStyle = fire ? '#fdba74' : '#fff';
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.fillStyle = fire ? '#fdba74' : '#e0f2fe';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(b.x - 1.5, b.y - 1.5, b.r * 0.45, 0, Math.PI * 2); ctx.fill();
             }
 
             // Partikel
