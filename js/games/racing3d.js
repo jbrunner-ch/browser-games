@@ -871,11 +871,11 @@
         }
 
         collideWalls() {
-            const c = this.car, limit = this.cfg.limit;
+            const c = this.car, effLimit = this.cfg.limit - 0.38;
             for (let pass = 0; pass < 2; pass++) {
                 for (const cc of this.carCircles(c.x, c.z, c.rot)) {
                     const loc = this.locate(cc.x, cc.z, c.idx);
-                    const over = Math.abs(loc.d) + CAR_R - limit;
+                    const over = Math.abs(loc.d) + CAR_R - effLimit;
                     if (over <= 0) continue;
                     const sgn = loc.d >= 0 ? 1 : -1;
                     c.x -= sgn * loc.nx * over;

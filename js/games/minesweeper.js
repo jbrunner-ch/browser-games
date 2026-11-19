@@ -99,6 +99,7 @@
             this.cols = 9;
             this.totalMines = 10;
             this.isHex = false;
+            this.gridOverride = null;
             this.nb = [];
             this.grid = [];
             this.firstClick = true;
@@ -387,6 +388,18 @@
             if (am && am.init) { try { am.init(); } catch (e) { /* audio is optional */ } }
             switch (action) {
                 case 'start': this.startLevel(this.currentLevel); this.levelToasts(); break;
+                case 'mode-square':
+                    this.gridOverride = 'square';
+                    this.startLevel(this.currentLevel);
+                    this.state = 'ready';
+                    this.showOverlay('start');
+                    break;
+                case 'mode-hex':
+                    this.gridOverride = 'hex';
+                    this.startLevel(this.currentLevel);
+                    this.state = 'ready';
+                    this.showOverlay('start');
+                    break;
                 case 'resume': this.resume(); break;
                 case 'pause': if (this.state === 'pause') this.resume(); else this.pause(); break;
                 case 'retry': this.retryLevel(); break;
@@ -570,7 +583,15 @@
         startLevel(levelIndex = 1) {
             const L = Math.max(1, levelIndex | 0);
             this.currentLevel = L;
-            const p = MinesweeperGame.levelParams(L);
+            const baseParams = MinesweeperGame.levelParams(L);
+            const p = { ...baseParams };
+            if (this.gridOverride !== null) {
+                p.isHex = (this.gridOverride === 'hex');
+                if (p.isHex !== baseParams.isHex) {
+                    const density = (0.12 + Math.min(0.08, L * 0.003)) * (p.isHex ? 0.85 : 1);
+                    p.mines = Math.max(3, Math.round(p.rows * p.cols * density));
+                }
+            }
             this.params = p;
             this.rows = p.rows;
             this.cols = p.cols;
@@ -933,6 +954,10 @@
             let html = '';
             if (kind === 'start') {
                 html = `<h2>${GAME_TITLE}</h2><p>Level ${this.pad(this.currentLevel)} · ${p.isHex ? 'Hex-Gitter' : 'Quadrat-Gitter'} · ${p.rows}×${p.cols} · ${p.mines} Minen<br>Linksklick: aufdecken · Rechtsklick/Langdruck: Flagge<br>Jedes Level ist per Logik lösbar. <b>T</b> = Selbsttest</p>
+                    <div class="gx-actions" style="margin-bottom:8px;">
+                        <button class="gx-btn${p.isHex ? ' secondary' : ''}" data-gx="mode-square">Quadrat</button>
+                        <button class="gx-btn${p.isHex ? '' : ' secondary'}" data-gx="mode-hex">Hex-Gitter</button>
+                    </div>
                     <div class="gx-actions"><button class="gx-btn" data-gx="start">Start</button></div>`;
             } else if (kind === 'pause') {
                 html = `<h2>Pause</h2><p>Durchatmen. Das Feld wartet.</p>

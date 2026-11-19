@@ -901,13 +901,13 @@
             const oy = Math.floor(this.headerH + (ch - this.headerH - this.mapH * ts) / 2 + sy);
             const p = this.player;
             const hue = (210 + this.floor * 12) % 360;
-            const wallTop = `hsl(${hue},26%,12%)`;
-            const wallRim = `hsl(${hue},32%,20%)`;
-            const wallFront = `hsl(${hue},24%,8%)`;
-            const floorCol = `hsl(${hue},18%,16%)`;
-            const floorAlt = `hsl(${hue},18%,19%)`;
-            const seamCol = `hsl(${hue},18%,11%)`;
-            const R = 7;
+            const wallTop = `hsl(${hue},26%,22%)`;
+            const wallRim = `hsl(${hue},34%,34%)`;
+            const wallFront = `hsl(${hue},24%,14%)`;
+            const floorCol = `hsl(${hue},20%,22%)`;
+            const floorAlt = `hsl(${hue},20%,26%)`;
+            const seamCol = `hsl(${hue},18%,15%)`;
+            const R = 8.5;
 
             // Licht: 1 nahe am Spieler, faellt zum Rand ab; bereits Entdecktes bleibt gedimmt
             const light = (x, y) => clamp(1 - Math.hypot(x + 0.5 - (p.px + 0.5), y + 0.5 - (p.py + 0.5)) / R, 0, 1);
@@ -956,10 +956,12 @@
                         }
                     }
 
-                    const dark = 0.82 - lVal * 0.82;
-                    ctx.globalAlpha = Math.max(dark, 0.32);
-                    ctx.fillStyle = '#02040a';
-                    ctx.fillRect(tx, ty, ts, ts);
+                    const dark = clamp(0.62 * (1 - lVal), 0, 0.62);
+                    if (dark > 0.01) {
+                        ctx.globalAlpha = dark;
+                        ctx.fillStyle = '#02040a';
+                        ctx.fillRect(tx, ty, ts, ts);
+                    }
                     ctx.globalAlpha = 1;
                 }
             }
